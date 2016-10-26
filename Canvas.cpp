@@ -170,7 +170,7 @@ namespace flabs
 		//TODO: Add Go to coordinate
 		//TODO: Add lock screen
 		//TODO: Add show mouse option
-		//TODO: Add Center all option
+		//TODO: Add Zoom Fit option
 		PopupMenu(&menu, event.GetPosition());
 	}
 
@@ -271,8 +271,25 @@ namespace flabs
 
 	void Canvas::line(double x, double y, double nx, double ny)
 	{
-//		dc->DrawLine(unitXToPixelX(x1), unitYToPixelY(y1), unitXToPixelX(x2),
-//			unitYToPixelY(y2));
+		double minX, maxX, minY, maxY;
+		getBounds(minX, maxX, minY, maxY);
+		double t1, t2;
+		double x1, y1, x2, y2;
+		if (nx != 0)
+		{
+			t1 = (minX - x) / nx;
+			t2 = (maxX - x) / nx;
+		}
+		else
+		{
+			t1 = (minY - y) / ny;
+			t2 = (maxY - y) / ny;
+		}
+		x1 = t1 * nx + x;
+		x2 = t2 * nx + x;
+		y1 = t1 * ny + y;
+		y2 = t2 * ny + y;
+		lineSegment(x1, y1, x2, y2);
 	}
 
 	void Canvas::string(double x, double y, const char* str)
