@@ -20,22 +20,19 @@ using namespace std;
 
 namespace flabs
 {
-	//TODO: Get rid of this bandaid
-	const double Canvas::MINIMUM_SCALE = 1e-5;
-	const double Canvas::MAXIMUM_SCALE = 1e8;
-
-	Canvas::Canvas(wxWindow* parent, int id) : wxPanel(parent, id,
-		wxDefaultPosition, wxSize(-1, 30), wxSUNKEN_BORDER), parent(parent),
-		dc(NULL), scale(.01), x(0), y(0), dragging(false), lastMouseX(0),
-		lastMouseY(0), drawColor(0, 0, 0), brushStyle(wxBRUSHSTYLE_SOLID),
-		backgroundColor(220, 220, 220), majorDivisionColor(190, 190, 190),
-		minorDivisionColor(205, 205, 205),
+	Canvas::Canvas(wxWindow* parent, int id) :
+		wxPanel(parent, id, wxDefaultPosition, wxSize(-1, 30), wxSUNKEN_BORDER),
+		parent(parent), dc(NULL), scale(.01), x(0), y(0), dragging(false),
+		lastMouseX(0), lastMouseY(0), drawColor(0, 0, 0),
+		brushStyle(wxBRUSHSTYLE_SOLID), backgroundColor(220, 220, 220),
+		majorDivisionColor(190, 190, 190), minorDivisionColor(205, 205, 205),
 		majorDivisionLabelColor(120, 120, 120), showGrid(true)
 	{
 		//TODO: Switch to Bind
-		Connect(wxEVT_PAINT, wxPaintEventHandler(Canvas::OnPaint));
+		Connect(wxEVT_PAINT, wxPaintEventHandler(Canvas::paintEvent));
 		Connect(wxEVT_SIZE, wxSizeEventHandler(Canvas::OnSize));
 		Connect(wxEVT_MOTION, wxMouseEventHandler(Canvas::OnMouseMoved));
+		Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(Canvas::OnMouseButton));
 		Connect(wxEVT_MIDDLE_DOWN, wxMouseEventHandler(Canvas::OnMouseButton));
 		Connect(wxEVT_RIGHT_DOWN, wxMouseEventHandler(Canvas::OnRightDown));
 		Connect(wxEVT_MIDDLE_UP, wxMouseEventHandler(Canvas::OnMouseButton));
@@ -54,7 +51,7 @@ namespace flabs
 		Refresh();
 	}
 
-	void Canvas::OnPaint(wxPaintEvent& event)
+	void Canvas::paintEvent(wxPaintEvent& event)
 	{
 		// TODO: Optimize bitmap creation
 		wxBufferedPaintDC dc(this);
@@ -78,41 +75,41 @@ namespace flabs
 	{
 		// TODO: increase efficiency
 		// TODO: Fix infinite loop (probably check if start < end)
-//				Watchdog watchdog(100, [](Watchdog& watchdog){cout << __FUNCTION__ << " is unresponsive" << endl;});
 		double gridScale     = (double) pow(2, floor(log2(scale)));
 		double majorDivision = gridScale * 100;
 		double minorDivision = gridScale * 10;
 		double minX, maxX, minY, maxY;
 		getBounds(minX, maxX, minY, maxY);
 		double start, end;
+		int    w             = 0;
 
 		setColor(minorDivisionColor);
 		start = ceil(minX / minorDivision) * minorDivision;
 		end   = floor(maxX / minorDivision) * minorDivision;
-		for (double i = start; i <= end; i += minorDivision)
+		for (double i = start; i <= end && w < 1000; i += minorDivision, ++w)
 			lineSegment(i, minY, i, maxY);
 
 		start = ceil(minY / minorDivision) * minorDivision;
 		end   = floor(maxY / minorDivision) * minorDivision;
-		for (double i = start; i <= end; i += minorDivision)
+		for (double i = start; i <= end && w < 1000; i += minorDivision, ++w)
 			lineSegment(minX, i, maxX, i);
 
 		setColor(majorDivisionColor);
 		start = ceil(minX / majorDivision) * majorDivision;
 		end   = floor(maxX / majorDivision) * majorDivision;
-		for (double i = start; i <= end; i += majorDivision)
+		for (double i = start; i <= end && w < 1000; i += majorDivision, ++w)
 			lineSegment(i, minY, i, maxY);
 
 		start = ceil(minY / majorDivision) * majorDivision;
 		end   = floor(maxY / majorDivision) * majorDivision;
-		for (double i = start; i <= end; i += majorDivision)
+		for (double i = start; i <= end && w < 1000; i += majorDivision, ++w)
 			lineSegment(minX, i, maxX, i);
 
 		int lineHeight = dc->GetFontMetrics().height;
 		dc->SetTextForeground(majorDivisionLabelColor);
 		start = ceil(minX / majorDivision) * majorDivision;
 		end   = floor(maxX / majorDivision) * majorDivision;
-		for (double i = start; i <= end; i += majorDivision)
+		for (double i = start; i <= end && w < 1000; i += majorDivision, ++w)
 		{
 			ostringstream stringStream;
 			stringStream.precision(1);
@@ -124,7 +121,7 @@ namespace flabs
 
 		start = ceil(minY / majorDivision) * majorDivision;
 		end   = floor(maxY / majorDivision) * majorDivision;
-		for (double i = start; i <= end; i += majorDivision)
+		for (double i = start; i <= end && w < 1000; i += majorDivision, ++w)
 		{
 			ostringstream stringStream;
 			stringStream.precision(1);
@@ -133,6 +130,15 @@ namespace flabs
 			string(maxX - pixelsToUnits(
 				dc->GetTextExtent(stringStream.str().c_str()).x + 5), i,
 				stringStream.str().c_str());
+		}
+
+		if (w >= 1000)
+		{
+			cout << "Zoom exceeded 64 bit precision limits" << endl;
+			x     = 0;
+			y     = 0;
+			scale = 100;
+			Refresh();
 		}
 	}
 
@@ -160,6 +166,20 @@ namespace flabs
 			dragging = false;
 	}
 
+	void Canvas::OnMouseLeftButton(wxMouseEvent& event)
+	{
+		if (event.m_leftDown)
+		{
+			MouseEvent mouseEvent;
+			mouseEvent.pixelX = event.m_x;
+			mouseEvent.pixelY = event.m_y;
+			mouseEvent.x      = pixelXToUnitX(event.m_x);
+			mouseEvent.y      = pixelYToUnitY(event.m_y);
+			mouseEvent.type   = DOWN;
+			mouseLeftDownNotifier.notify(mouseEvent);
+		}
+	}
+
 	void Canvas::OnRightDown(wxMouseEvent& event)
 	{
 		wxMenu menu;
@@ -171,6 +191,7 @@ namespace flabs
 		//TODO: Add lock screen
 		//TODO: Add show mouse option
 		//TODO: Add Zoom Fit option
+		//TODO: Add Save Image option
 		PopupMenu(&menu, event.GetPosition());
 	}
 
@@ -196,19 +217,15 @@ namespace flabs
 
 	void Canvas::OnMouseWheel(wxMouseEvent& event)
 	{
-		double
-			newScale = pow(2, log2(scale) - event.m_wheelRotation / 120. / 10);
-		if (newScale >= MINIMUM_SCALE && newScale <= MAXIMUM_SCALE)
-		{
-			double oldX = pixelXToUnitX(event.m_x);
-			double oldY = pixelYToUnitY(event.m_y);
-			scale = newScale;
-			double newX = pixelXToUnitX(event.m_x);
-			double newY = pixelYToUnitY(event.m_y);
-			x += oldX - newX;
-			y += oldY - newY;
-			Refresh();
-		}
+		double oldX = pixelXToUnitX(event.m_x);
+		double oldY = pixelYToUnitY(event.m_y);
+		scale =
+			(double) pow(2, log2(scale) - event.GetWheelRotation() / 120. / 10);
+		double newX = pixelXToUnitX(event.m_x);
+		double newY = pixelYToUnitY(event.m_y);
+		x += oldX - newX;
+		y += oldY - newY;
+		Refresh();
 	}
 
 	void Canvas::OnEnter(wxMouseEvent& event)
@@ -315,7 +332,7 @@ namespace flabs
 
 	int Canvas::unitYToPixelY(double y)
 	{
-		return  GetSize().y / 2 - (int) ((y - this->y) / scale + .5);
+		return GetSize().y / 2 - (int) ((y - this->y) / scale + .5);
 	}
 
 	inline double Canvas::pixelXToUnitX(int x)
@@ -345,5 +362,10 @@ namespace flabs
 	void Canvas::setShowGrid(bool enable)
 	{
 		showGrid = enable;
+	}
+
+	void Canvas::addMouseLeftDownNotifier(std::function<void(MouseEvent)> f)
+	{
+		mouseLeftDownNotifier.addListener(f);
 	}
 }

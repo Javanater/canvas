@@ -9,3 +9,4 @@ set(SOURCE_FILES
 		Drawable.h DrawableLine.cpp DrawableLine.hpp)
 add_library(${PROJECT_NAME} ${SOURCE_FILES})
 target_link_libraries(${PROJECT_NAME} ${wxWidgets_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} Utilities)

@@ -12,6 +12,7 @@
 #include <set>
 #include "Drawable.h"
 #include <Utilities/utilities.h>
+#include <Utilities/Notifier.h>
 #include <wx/dcbuffer.h>
 #include <iterator>
 #include <iostream>
@@ -21,8 +22,19 @@ namespace flabs
 	class Canvas : public wxPanel
 	{
 		public:
-			const static double MINIMUM_SCALE;
-			const static double MAXIMUM_SCALE;
+			enum MouseEventType
+			{
+				UP, DOWN, MOVE, DRAG
+			};
+
+			struct MouseEvent
+			{
+				double         x;
+				double         y;
+				int            pixelX;
+				int            pixelY;
+				MouseEventType type;
+			};
 
 		private:
 			wxWindow* parent;
@@ -34,19 +46,20 @@ namespace flabs
 			/**
 			 * Units per pixel.
 			 */
-			double       scale;
-			double       x;
-			double       y;
-			bool         dragging;
-			int          lastMouseX;
-			int          lastMouseY;
-			wxColour     drawColor;
-			wxBrushStyle brushStyle;
-			wxColour     backgroundColor;
-			wxColour     majorDivisionColor;
-			wxColour     minorDivisionColor;
-			wxColour     majorDivisionLabelColor;
-			bool         showGrid;
+			double               scale;
+			double               x;
+			double               y;
+			bool                 dragging;
+			int                  lastMouseX;
+			int                  lastMouseY;
+			wxColour             drawColor;
+			wxBrushStyle         brushStyle;
+			wxColour             backgroundColor;
+			wxColour             majorDivisionColor;
+			wxColour             minorDivisionColor;
+			wxColour             majorDivisionLabelColor;
+			bool                 showGrid;
+			Notifier<MouseEvent> mouseLeftDownNotifier;
 
 		public:
 			Canvas(wxWindow* parent, int id);
@@ -55,11 +68,13 @@ namespace flabs
 
 			void OnSize(wxSizeEvent& event);
 
-			void OnPaint(wxPaintEvent& event);
+			void paintEvent(wxPaintEvent& event);
 
 			void OnMouseMoved(wxMouseEvent& event);
 
 			void OnMouseButton(wxMouseEvent& event);
+
+			void OnMouseLeftButton(wxMouseEvent& event);
 
 			void OnMouseWheel(wxMouseEvent& event);
 
@@ -104,7 +119,9 @@ namespace flabs
 			template<class Iterator>
 			void polygon(Iterator start, Iterator end)
 			{
-				size_t count = std::distance(start, end);
+				auto count = std::distance(start, end);
+				if (count <= 0)
+					return;
 				wxPoint* array = (wxPoint*) malloc(count * sizeof(wxPoint));
 				int i = 0;
 				while (start != end)
@@ -134,6 +151,8 @@ namespace flabs
 			getBounds(double& minX, double& maxX, double& minY, double& maxY);
 
 			void setShowGrid(bool enable);
+
+			void addMouseLeftDownNotifier(std::function<void(MouseEvent)> f);
 	};
 }
 
