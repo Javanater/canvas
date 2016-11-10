@@ -13,6 +13,7 @@
 #include "Drawable.h"
 #include <Utilities/utilities.h>
 #include <Utilities/Notifier.h>
+#include <Utilities/Watchdog.h>
 #include <wx/dcbuffer.h>
 #include <iterator>
 #include <iostream>
@@ -41,25 +42,28 @@ namespace flabs
 			typedef std::multiset<Drawable*, lessPointer<Drawable*>>
 						DrawableSet;
 			DrawableSet drawables;
-			wxBufferedPaintDC* dc;
+			wxDC* dc;
 
 			/**
 			 * Units per pixel.
 			 */
-			double               scale;
-			double               x;
-			double               y;
-			bool                 dragging;
-			int                  lastMouseX;
-			int                  lastMouseY;
-			wxColour             drawColor;
-			wxBrushStyle         brushStyle;
-			wxColour             backgroundColor;
-			wxColour             majorDivisionColor;
-			wxColour             minorDivisionColor;
-			wxColour             majorDivisionLabelColor;
-			bool                 showGrid;
-			Notifier<MouseEvent> mouseLeftDownNotifier;
+			double                      scale;
+			double                      x;
+			double                      y;
+			double                      minX, minY, maxX, maxY;
+			bool                        dragging;
+			int                         lastMouseX;
+			int                         lastMouseY;
+			wxColour                    drawColor;
+			wxBrushStyle                brushStyle;
+			wxColour                    backgroundColor;
+			wxColour                    majorDivisionColor;
+			wxColour                    minorDivisionColor;
+			wxColour                    majorDivisionLabelColor;
+			bool                        showGrid;
+			Notifier<MouseEvent>        mouseLeftDownNotifier;
+			std::string                 message;
+			std::unique_ptr<Watchdog<>> messageWatchdog;
 
 		public:
 			Canvas(wxWindow* parent, int id);
@@ -135,9 +139,15 @@ namespace flabs
 				free(array);
 			}
 
-			inline double pixelsToUnits(int pixels);
+			inline double pixelsToUnits(int pixels)
+			{
+				return pixels * scale;
+			}
 
-			inline int unitsToPixels(double units);
+			inline int unitsToPixels(double units)
+			{
+				return (int) (units / scale + .5);
+			}
 
 			int unitXToPixelX(double x);
 
@@ -153,6 +163,12 @@ namespace flabs
 			void setShowGrid(bool enable);
 
 			void addMouseLeftDownNotifier(std::function<void(MouseEvent)> f);
+
+			void briefMessage(std::string message);
+
+			void saveImage();
+
+			void paint(wxDC* dc);
 	};
 }
 

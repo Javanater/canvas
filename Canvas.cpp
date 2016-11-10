@@ -10,13 +10,14 @@
 #include <math.h>
 #include <iostream>
 #include <sstream>
-#include <Utilities/Watchdog.h>
 
 using namespace std;
 
 //TODO: Make this static instead of global
 #define ID_SHOWGRID 0
 #define ID_GOTO_HOME 1
+#define ID_ZOOM_FIT 2
+#define ID_SAVE_IMAGE 3
 
 namespace flabs
 {
@@ -28,11 +29,13 @@ namespace flabs
 		majorDivisionColor(190, 190, 190), minorDivisionColor(205, 205, 205),
 		majorDivisionLabelColor(120, 120, 120), showGrid(true)
 	{
+		wxInitAllImageHandlers();
 		//TODO: Switch to Bind
 		Connect(wxEVT_PAINT, wxPaintEventHandler(Canvas::paintEvent));
 		Connect(wxEVT_SIZE, wxSizeEventHandler(Canvas::OnSize));
 		Connect(wxEVT_MOTION, wxMouseEventHandler(Canvas::OnMouseMoved));
-		Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(Canvas::OnMouseButton));
+		Connect(wxEVT_LEFT_DOWN,
+			wxMouseEventHandler(Canvas::OnMouseLeftButton));
 		Connect(wxEVT_MIDDLE_DOWN, wxMouseEventHandler(Canvas::OnMouseButton));
 		Connect(wxEVT_RIGHT_DOWN, wxMouseEventHandler(Canvas::OnRightDown));
 		Connect(wxEVT_MIDDLE_UP, wxMouseEventHandler(Canvas::OnMouseButton));
@@ -55,18 +58,33 @@ namespace flabs
 	{
 		// TODO: Optimize bitmap creation
 		wxBufferedPaintDC dc(this);
-		//TODO: Should dc be atomic? Guarded?
-		//TODO: Is there a way to keep dc from escaping local scope?
-		this->dc = &dc;
+		paint(&dc);
+	}
+
+	void Canvas::paint(wxDC* dc)
+	{
+		//TODO: Should dc be atomic? Guarded? Yes
+		this->dc = dc;
 		fill().setColor(backgroundColor);
 		wxSize size = GetSize();
-		dc.DrawRectangle(0, 0, size.x, size.y);
+		dc->DrawRectangle(0, 0, size.x, size.y);
 		if (showGrid)
 			drawGrid();
 
+		minX = minY = numeric_limits<double>::max();
+		maxX = maxY = numeric_limits<double>::lowest();
 		for (DrawableSet::iterator drawable = drawables.begin();
 			drawable != drawables.end(); ++drawable)
 			(*drawable)->draw(*this);
+
+		if (message.length())
+		{
+			wxColour color(255, 0, 0);
+			dc->SetTextForeground(color);
+			dc->DrawText(message,
+				size.x / 2 - dc->GetTextExtent(message.c_str()).x / 2,
+				(wxCoord) (size.y * .8));
+		}
 
 		this->dc = nullptr;
 	}
@@ -74,7 +92,6 @@ namespace flabs
 	void Canvas::drawGrid()
 	{
 		// TODO: increase efficiency
-		// TODO: Fix infinite loop (probably check if start < end)
 		double gridScale     = (double) pow(2, floor(log2(scale)));
 		double majorDivision = gridScale * 100;
 		double minorDivision = gridScale * 10;
@@ -134,11 +151,10 @@ namespace flabs
 
 		if (w >= 1000)
 		{
-			cout << "Zoom exceeded 64 bit precision limits" << endl;
 			x     = 0;
 			y     = 0;
 			scale = 100;
-			Refresh();
+			briefMessage("Zoom exceeded 64 bit precision limits");
 		}
 	}
 
@@ -185,13 +201,13 @@ namespace flabs
 		wxMenu menu;
 		menu.AppendCheckItem(ID_SHOWGRID, wxT("Show Grid"))->Check(showGrid);
 		menu.Append(ID_GOTO_HOME, wxT("Go to (0, 0)"));
+		menu.Append(ID_ZOOM_FIT, wxT("Zoom Fit"));
+		menu.Append(ID_SAVE_IMAGE, wxT("Save Image"));
 		menu.Connect(wxEVT_COMMAND_MENU_SELECTED,
 			wxCommandEventHandler(OnPopupSelected), NULL, this);
 		//TODO: Add Go to coordinate
 		//TODO: Add lock screen
 		//TODO: Add show mouse option
-		//TODO: Add Zoom Fit option
-		//TODO: Add Save Image option
 		PopupMenu(&menu, event.GetPosition());
 	}
 
@@ -208,6 +224,23 @@ namespace flabs
 				x = 0;
 				y = 0;
 				Refresh();
+				break;
+
+			case ID_ZOOM_FIT:
+				if (minX < maxX && minY < maxY)
+				{
+					x = (maxX + minX) / 2;
+					y = (maxY + minY) / 2;
+					wxSize size = GetSize();
+					scale =
+						max((maxX - minX) / size.x, (maxY - minY) / size.y) *
+							1.2;
+					Refresh();
+				}
+				break;
+
+			case ID_SAVE_IMAGE:
+				saveImage();
 				break;
 
 			default:
@@ -236,7 +269,10 @@ namespace flabs
 	void Canvas::add(Drawable* drawable)
 	{
 		if (drawable != NULL)
+		{
 			drawables.insert(drawable);
+			Refresh();
+		}
 	}
 
 	Canvas& Canvas::draw()
@@ -269,12 +305,20 @@ namespace flabs
 
 	void Canvas::rectangle(double x, double y, double width, double height)
 	{
+		minX = min(x, minX);
+		minY = min(y, minY);
+		maxX = max(x + width, maxX);
+		maxY = max(y + height, maxY);
 		dc->DrawRectangle(unitXToPixelX(x), unitYToPixelY(y),
 			unitsToPixels(width), unitsToPixels(height));
 	}
 
 	void Canvas::circle(double x, double y, double radius)
 	{
+		minX = min(x - radius, minX);
+		minY = min(y - radius, minY);
+		maxX = max(x + radius, maxX);
+		maxY = max(y + radius, maxY);
 		dc->DrawEllipticArc(unitXToPixelX(x - radius),
 			unitYToPixelY(y + radius), unitsToPixels(radius * 2),
 			unitsToPixels(radius * 2), 0, 360);
@@ -282,12 +326,17 @@ namespace flabs
 
 	void Canvas::lineSegment(double x1, double y1, double x2, double y2)
 	{
+		minX = min(x2, min(x1, minX));
+		minY = min(y2, min(y1, minY));
+		maxX = max(x2, max(x1, maxX));
+		maxY = max(y2, max(y1, maxY));
 		dc->DrawLine(unitXToPixelX(x1), unitYToPixelY(y1), unitXToPixelX(x2),
 			unitYToPixelY(y2));
 	}
 
 	void Canvas::line(double x, double y, double nx, double ny)
 	{
+		//TODO: Implement minX, minY, maxX, maxY calculation
 		double minX, maxX, minY, maxY;
 		getBounds(minX, maxX, minY, maxY);
 		double t1, t2;
@@ -306,23 +355,19 @@ namespace flabs
 		x2 = t2 * nx + x;
 		y1 = t1 * ny + y;
 		y2 = t2 * ny + y;
-		lineSegment(x1, y1, x2, y2);
+		dc->DrawLine(unitXToPixelX(x1), unitYToPixelY(y1), unitXToPixelX(x2),
+			unitYToPixelY(y2));
 	}
 
 	void Canvas::string(double x, double y, const char* str)
 	{
+		wxSize textSize = dc->GetTextExtent(str);
+		minX = min(x, minX);
+		minY = min(y, minY);
+		maxX = max(x + pixelsToUnits(textSize.x), maxX);
+		maxY = max(y + pixelsToUnits(textSize.y), maxY);
 		dc->DrawText(wxString::FromUTF8(str), unitXToPixelX(x),
 			unitYToPixelY(y));
-	}
-
-	inline double Canvas::pixelsToUnits(int pixels)
-	{
-		return pixels * scale;
-	}
-
-	inline int Canvas::unitsToPixels(double units)
-	{
-		return (int) (units / scale + .5);
 	}
 
 	int Canvas::unitXToPixelX(double x)
@@ -367,5 +412,33 @@ namespace flabs
 	void Canvas::addMouseLeftDownNotifier(std::function<void(MouseEvent)> f)
 	{
 		mouseLeftDownNotifier.addListener(f);
+	}
+
+	void Canvas::briefMessage(std::string message)
+	{
+		this->message = message;
+		Refresh();
+		messageWatchdog = make_unique<Watchdog<>>([this]()
+		{
+			this->message = "";
+			Refresh();
+		}, 3000);
+	}
+
+	void Canvas::saveImage()
+	{
+		wxFileDialog dlg(this, wxT("Choose file..."), wxEmptyString,
+			wxEmptyString, wxString(wxT("PNG files (*.png)|*.png")),
+			wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+
+		if (dlg.ShowModal() != wxID_OK)
+			return;
+
+		wxBitmap bitmap;
+		bitmap.Create(GetSize().x, GetSize().y);
+		wxMemoryDC mdc;
+		mdc.SelectObject(bitmap);
+		paint(&mdc);
+		bitmap.ConvertToImage().SaveFile(dlg.GetPath(), wxBITMAP_TYPE_PNG);
 	}
 }
