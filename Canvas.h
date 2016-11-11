@@ -47,19 +47,20 @@ namespace flabs
 			/**
 			 * Units per pixel.
 			 */
-			double                      scale;
-			double                      x;
-			double                      y;
-			double                      minX, minY, maxX, maxY;
-			bool                        dragging;
-			int                         lastMouseX;
-			int                         lastMouseY;
-			wxColour                    drawColor;
-			wxBrushStyle                brushStyle;
-			wxColour                    backgroundColor;
-			wxColour                    majorDivisionColor;
-			wxColour                    minorDivisionColor;
-			wxColour                    majorDivisionLabelColor;
+			double       xScale;
+			double       yScale;
+			double       x;
+			double       y;
+			double       minX, minY, maxX, maxY;
+			bool         dragging;
+			int          lastMouseX;
+			int          lastMouseY;
+			wxColour     drawColor;
+			wxBrushStyle brushStyle;
+			wxColour     backgroundColor;
+			wxColour     majorDivisionColor;
+			wxColour     minorDivisionColor;
+			wxColour     majorDivisionLabelColor;
 			bool                        showGrid;
 			Notifier<MouseEvent>        mouseLeftDownNotifier;
 			std::string                 message;
@@ -106,6 +107,8 @@ namespace flabs
 
 			void circle(double x, double y, double radius);
 
+			void ellipse(double x, double y, double xRadius, double yRadius);
+
 			void lineSegment(double x1, double y1, double x2, double y2);
 
 			/**
@@ -139,14 +142,24 @@ namespace flabs
 				free(array);
 			}
 
-			inline double pixelsToUnits(int pixels)
+			inline double xPixelsToUnits(int pixels)
 			{
-				return pixels * scale;
+				return pixels * xScale;
 			}
 
-			inline int unitsToPixels(double units)
+			inline int xUnitsToPixels(double units)
 			{
-				return (int) (units / scale + .5);
+				return (int) (units / xScale + .5);
+			}
+
+			inline double yPixelsToUnits(int pixels)
+			{
+				return pixels * yScale;
+			}
+
+			inline int yUnitsToPixels(double units)
+			{
+				return (int) (units / yScale + .5);
 			}
 
 			int unitXToPixelX(double x);

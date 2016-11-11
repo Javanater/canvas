@@ -18,13 +18,14 @@ using namespace std;
 #define ID_GOTO_HOME 1
 #define ID_ZOOM_FIT 2
 #define ID_SAVE_IMAGE 3
+#define ID_SYNC_X_AND_Y_SCALE 4
 
 namespace flabs
 {
 	Canvas::Canvas(wxWindow* parent, int id) :
 		wxPanel(parent, id, wxDefaultPosition, wxSize(-1, 30), wxSUNKEN_BORDER),
-		parent(parent), dc(NULL), scale(.01), x(0), y(0), dragging(false),
-		lastMouseX(0), lastMouseY(0), drawColor(0, 0, 0),
+		parent(parent), dc(NULL), xScale(.01), yScale(.01), x(0), y(0),
+		dragging(false), lastMouseX(0), lastMouseY(0), drawColor(0, 0, 0),
 		brushStyle(wxBRUSHSTYLE_SOLID), backgroundColor(220, 220, 220),
 		majorDivisionColor(190, 190, 190), minorDivisionColor(205, 205, 205),
 		majorDivisionLabelColor(120, 120, 120), showGrid(true)
@@ -92,78 +93,81 @@ namespace flabs
 	void Canvas::drawGrid()
 	{
 		// TODO: increase efficiency
-		double gridScale     = (double) pow(2, floor(log2(scale)));
-		double majorDivision = gridScale * 100;
-		double minorDivision = gridScale * 10;
+		double xGridScale     = (double) pow(2, floor(log2(xScale)));
+		double xMajorDivision = xGridScale * 100;
+		double xMinorDivision = xGridScale * 10;
+		double yGridScale     = (double) pow(2, floor(log2(yScale)));
+		double yMajorDivision = yGridScale * 100;
+		double yMinorDivision = yGridScale * 10;
 		double minX, maxX, minY, maxY;
 		getBounds(minX, maxX, minY, maxY);
 		double start, end;
-		int    w             = 0;
+		int    w              = 0;
 
 		setColor(minorDivisionColor);
-		start = ceil(minX / minorDivision) * minorDivision;
-		end   = floor(maxX / minorDivision) * minorDivision;
-		for (double i = start; i <= end && w < 1000; i += minorDivision, ++w)
+		start = ceil(minX / xMinorDivision) * xMinorDivision;
+		end   = floor(maxX / xMinorDivision) * xMinorDivision;
+		for (double i = start; i <= end && w < 1000; i += xMinorDivision, ++w)
 			lineSegment(i, minY, i, maxY);
 
-		start = ceil(minY / minorDivision) * minorDivision;
-		end   = floor(maxY / minorDivision) * minorDivision;
-		for (double i = start; i <= end && w < 1000; i += minorDivision, ++w)
+		start = ceil(minY / yMinorDivision) * yMinorDivision;
+		end   = floor(maxY / yMinorDivision) * yMinorDivision;
+		for (double i = start; i <= end && w < 1000; i += yMinorDivision, ++w)
 			lineSegment(minX, i, maxX, i);
 
 		setColor(majorDivisionColor);
-		start = ceil(minX / majorDivision) * majorDivision;
-		end   = floor(maxX / majorDivision) * majorDivision;
-		for (double i = start; i <= end && w < 1000; i += majorDivision, ++w)
+		start = ceil(minX / xMajorDivision) * xMajorDivision;
+		end   = floor(maxX / xMajorDivision) * xMajorDivision;
+		for (double i = start; i <= end && w < 1000; i += xMajorDivision, ++w)
 			lineSegment(i, minY, i, maxY);
 
-		start = ceil(minY / majorDivision) * majorDivision;
-		end   = floor(maxY / majorDivision) * majorDivision;
-		for (double i = start; i <= end && w < 1000; i += majorDivision, ++w)
+		start = ceil(minY / yMajorDivision) * yMajorDivision;
+		end   = floor(maxY / yMajorDivision) * yMajorDivision;
+		for (double i = start; i <= end && w < 1000; i += yMajorDivision, ++w)
 			lineSegment(minX, i, maxX, i);
 
 		int lineHeight = dc->GetFontMetrics().height;
 		dc->SetTextForeground(majorDivisionLabelColor);
-		start = ceil(minX / majorDivision) * majorDivision;
-		end   = floor(maxX / majorDivision) * majorDivision;
-		for (double i = start; i <= end && w < 1000; i += majorDivision, ++w)
+		start = ceil(minX / xMajorDivision) * xMajorDivision;
+		end   = floor(maxX / xMajorDivision) * xMajorDivision;
+		for (double i = start; i <= end && w < 1000; i += xMajorDivision, ++w)
 		{
 			ostringstream stringStream;
 			stringStream.precision(1);
 			stringStream << scientific << i;
-			string(i, minY + pixelsToUnits(lineHeight),
+			string(i, minY + yPixelsToUnits(lineHeight),
 				stringStream.str().c_str());
 			string(i, maxY, stringStream.str().c_str());
 		}
 
-		start = ceil(minY / majorDivision) * majorDivision;
-		end   = floor(maxY / majorDivision) * majorDivision;
-		for (double i = start; i <= end && w < 1000; i += majorDivision, ++w)
+		start = ceil(minY / yMajorDivision) * yMajorDivision;
+		end   = floor(maxY / yMajorDivision) * yMajorDivision;
+		for (double i = start; i <= end && w < 1000; i += yMajorDivision, ++w)
 		{
 			ostringstream stringStream;
 			stringStream.precision(1);
 			stringStream << scientific << i;
 			string(minX, i, stringStream.str().c_str());
-			string(maxX - pixelsToUnits(
+			string(maxX - xPixelsToUnits(
 				dc->GetTextExtent(stringStream.str().c_str()).x + 5), i,
 				stringStream.str().c_str());
 		}
 
 		if (w >= 1000)
 		{
-			x     = 0;
-			y     = 0;
-			scale = 100;
+			x      = y      = 0;
+			xScale = yScale = .01;
 			briefMessage("Zoom exceeded 64 bit precision limits");
 		}
 	}
 
 	void Canvas::OnMouseMoved(wxMouseEvent& event)
 	{
+		SetCursor(wxCursor(wxCURSOR_CROSS));
 		if (dragging)
 		{
-			x += pixelsToUnits(lastMouseX - event.m_x);
-			y -= pixelsToUnits(lastMouseY - event.m_y);
+			x += xPixelsToUnits(lastMouseX - event.m_x);
+			y -= yPixelsToUnits(lastMouseY - event.m_y);
 			lastMouseX = event.m_x;
 			lastMouseY = event.m_y;
 			Refresh();
@@ -202,6 +206,7 @@ namespace flabs
 		menu.AppendCheckItem(ID_SHOWGRID, wxT("Show Grid"))->Check(showGrid);
 		menu.Append(ID_GOTO_HOME, wxT("Go to (0, 0)"));
 		menu.Append(ID_ZOOM_FIT, wxT("Zoom Fit"));
+		menu.Append(ID_SYNC_X_AND_Y_SCALE, wxT("Sync X and Y Scale"));
 		menu.Append(ID_SAVE_IMAGE, wxT("Save Image"));
 		menu.Connect(wxEVT_COMMAND_MENU_SELECTED,
 			wxCommandEventHandler(OnPopupSelected), NULL, this);
@@ -232,15 +237,22 @@ namespace flabs
 					x = (maxX + minX) / 2;
 					y = (maxY + minY) / 2;
 					wxSize size = GetSize();
-					scale =
-						max((maxX - minX) / size.x, (maxY - minY) / size.y) *
-							1.2;
+					xScale = (maxX - minX) / size.x * 1.2;
+					yScale = (maxY - minY) / size.y * 1.2;
 					Refresh();
 				}
 				break;
 
 			case ID_SAVE_IMAGE:
 				saveImage();
+				break;
+
+			case ID_SYNC_X_AND_Y_SCALE:
+				if (xScale > yScale)
+					yScale = xScale;
+				else
+					xScale = yScale;
+				Refresh();
 				break;
 
 			default:
@@ -252,8 +264,21 @@ namespace flabs
 	{
 		double oldX = pixelXToUnitX(event.m_x);
 		double oldY = pixelYToUnitY(event.m_y);
-		scale =
-			(double) pow(2, log2(scale) - event.GetWheelRotation() / 120. / 10);
+
+		if (!event.ControlDown() && !event.ShiftDown())
+			SetCursor(wxCursor(wxCURSOR_SIZING));
+		else if (!event.ControlDown())
+			SetCursor(wxCursor(wxCURSOR_SIZENS));
+		else if (!event.ShiftDown())
+			SetCursor(wxCursor(wxCURSOR_SIZEWE));
+
+		if (!event.ControlDown())
+			yScale = (double) pow(2,
+				log2(yScale) - event.GetWheelRotation() / 120. / 10);
+		if (!event.ShiftDown())
+			xScale = (double) pow(2,
+				log2(xScale) - event.GetWheelRotation() / 120. / 10);
+
 		double newX = pixelXToUnitX(event.m_x);
 		double newY = pixelYToUnitY(event.m_y);
 		x += oldX - newX;
@@ -264,6 +289,7 @@ namespace flabs
 	void Canvas::OnEnter(wxMouseEvent& event)
 	{
 		SetFocus();
+		SetCursor(wxCursor(wxCURSOR_CROSS));
 	}
 
 	void Canvas::add(Drawable* drawable)
@@ -310,7 +336,7 @@ namespace flabs
 		maxX = max(x + width, maxX);
 		maxY = max(y + height, maxY);
 		dc->DrawRectangle(unitXToPixelX(x), unitYToPixelY(y),
-			unitsToPixels(width), unitsToPixels(height));
+			xUnitsToPixels(width), yUnitsToPixels(height));
 	}
 
 	void Canvas::circle(double x, double y, double radius)
@@ -320,8 +346,19 @@ namespace flabs
 		maxX = max(x + radius, maxX);
 		maxY = max(y + radius, maxY);
 		dc->DrawEllipticArc(unitXToPixelX(x - radius),
-			unitYToPixelY(y + radius), unitsToPixels(radius * 2),
-			unitsToPixels(radius * 2), 0, 360);
+			unitYToPixelY(y + radius), xUnitsToPixels(radius * 2),
+			yUnitsToPixels(radius * 2), 0, 360);
+	}
+
+	void Canvas::ellipse(double x, double y, double xRadius, double yRadius)
+	{
+		minX = min(x - xRadius, minX);
+		minY = min(y - yRadius, minY);
+		maxX = max(x + xRadius, maxX);
+		maxY = max(y + yRadius, maxY);
+		dc->DrawEllipticArc(unitXToPixelX(x - xRadius),
+			unitYToPixelY(y + yRadius), xUnitsToPixels(xRadius * 2),
+			yUnitsToPixels(yRadius * 2), 0, 360);
 	}
 
 	void Canvas::lineSegment(double x1, double y1, double x2, double y2)
@@ -364,30 +401,30 @@ namespace flabs
 		wxSize textSize = dc->GetTextExtent(str);
 		minX = min(x, minX);
 		minY = min(y, minY);
-		maxX = max(x + pixelsToUnits(textSize.x), maxX);
-		maxY = max(y + pixelsToUnits(textSize.y), maxY);
+		maxX = max(x + xPixelsToUnits(textSize.x), maxX);
+		maxY = max(y + yPixelsToUnits(textSize.y), maxY);
 		dc->DrawText(wxString::FromUTF8(str), unitXToPixelX(x),
 			unitYToPixelY(y));
 	}
 
 	int Canvas::unitXToPixelX(double x)
 	{
-		return (int) ((x - this->x) / scale + .5) + GetSize().x / 2;
+		return (int) ((x - this->x) / xScale + .5) + GetSize().x / 2;
 	}
 
 	int Canvas::unitYToPixelY(double y)
 	{
-		return GetSize().y / 2 - (int) ((y - this->y) / scale + .5);
+		return GetSize().y / 2 - (int) ((y - this->y) / yScale + .5);
 	}
 
 	inline double Canvas::pixelXToUnitX(int x)
 	{
-		return (x - GetSize().x / 2) * scale + this->x;
+		return (x - GetSize().x / 2) * xScale + this->x;
 	}
 
 	inline double Canvas::pixelYToUnitY(int y)
 	{
-		return this->y - (y - GetSize().y / 2) * scale;
+		return this->y - (y - GetSize().y / 2) * yScale;
 	}
 
 	void Canvas::OnEraseBackground(wxEraseEvent& event)
