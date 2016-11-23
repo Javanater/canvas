@@ -9,20 +9,19 @@
 
 namespace flabs
 {
-	class DrawableCircle : public Drawable
-	{
-		private:
-			double   x, y, radius;
-			wxColour color;
+class DrawableCircle : public Drawable
+{
+public:
+	double   x, y, radius;
+	wxColour color;
 
-		public:
-			DrawableCircle(double x, double y, double radius,
-				wxColour color = wxColor(0, 0, 255), int level = 0);
+	DrawableCircle(double x, double y, double radius,
+		wxColour color = wxColor(0, 0, 255), int level = 0);
 
-			virtual ~DrawableCircle();
+	virtual ~DrawableCircle();
 
-			virtual void draw(Canvas& canvas);
-	};
+	virtual void draw(Canvas& canvas);
+};
 }
 
 #endif //PROJECTS_DRAWABLECIRCLE_HPP
