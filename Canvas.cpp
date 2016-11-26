@@ -329,40 +329,28 @@ Canvas& Canvas::setColor(wxColour color)
 
 void Canvas::rectangle(double x, double y, double width, double height)
 {
-	minX = min(x, minX);
-	minY = min(y, minY);
-	maxX = max(x + width, maxX);
-	maxY = max(y + height, maxY);
+	updateMinMax(x, y, x + width, y + height);
 	dc->DrawRectangle(unitXToPixelX(x), unitYToPixelY(y), xUnitsToPixels(width),
 		yUnitsToPixels(-height));
 }
 
 void Canvas::circle(double x, double y, double radius)
 {
-	minX = min(x - radius, minX);
-	minY = min(y - radius, minY);
-	maxX = max(x + radius, maxX);
-	maxY = max(y + radius, maxY);
+	updateMinMax(x - radius, y - radius, x + radius, y + radius);
 	dc->DrawEllipticArc(unitXToPixelX(x - radius), unitYToPixelY(y + radius),
 		xUnitsToPixels(radius * 2), yUnitsToPixels(radius * 2), 0, 360);
 }
 
 void Canvas::ellipse(double x, double y, double xRadius, double yRadius)
 {
-	minX = min(x - xRadius, minX);
-	minY = min(y - yRadius, minY);
-	maxX = max(x + xRadius, maxX);
-	maxY = max(y + yRadius, maxY);
+	updateMinMax(x - xRadius, y - yRadius, x + xRadius, y + yRadius);
 	dc->DrawEllipticArc(unitXToPixelX(x - xRadius), unitYToPixelY(y + yRadius),
 		xUnitsToPixels(xRadius * 2), yUnitsToPixels(yRadius * 2), 0, 360);
 }
 
 void Canvas::lineSegment(double x1, double y1, double x2, double y2)
 {
-	minX = min(x2, min(x1, minX));
-	minY = min(y2, min(y1, minY));
-	maxX = max(x2, max(x1, maxX));
-	maxY = max(y2, max(y1, maxY));
+	updateMinMax(min(x1, x2), min(y1, y2), max(x1, x2), max(y1, y2));
 	dc->DrawLine(unitXToPixelX(x1), unitYToPixelY(y1), unitXToPixelX(x2),
 		unitYToPixelY(y2));
 }
@@ -395,10 +383,8 @@ void Canvas::line(double x, double y, double nx, double ny)
 void Canvas::string(double x, double y, const char* str)
 {
 	wxSize textSize = dc->GetTextExtent(str);
-	minX = min(x, minX);
-	minY = min(y, minY);
-	maxX = max(x + xPixelsToUnits(textSize.x), maxX);
-	maxY = max(y + yPixelsToUnits(textSize.y), maxY);
+	updateMinMax(x, y, x + xPixelsToUnits(textSize.x),
+		y + yPixelsToUnits(textSize.y));
 	dc->DrawText(wxString::FromUTF8(str), unitXToPixelX(x), unitYToPixelY(y));
 }
 
@@ -476,5 +462,15 @@ void Canvas::saveImage()
 void Canvas::setScale(double scale)
 {
 	xScale = yScale = scale;
+}
+
+void
+Canvas::updateMinMax(const double& minX, const double& minY, const double& maxX,
+	const double& maxY)
+{
+	this->minX = min(this->minX, minX);
+	this->minY = min(this->minY, minY);
+	this->maxX = max(this->maxX, maxX);
+	this->maxY = max(this->maxY, maxY);
 }
 }

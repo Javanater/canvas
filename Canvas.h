@@ -182,6 +182,11 @@ public:
 	void paint(wxDC* dc);
 
 	void setScale(double scale);
+
+private:
+	inline void
+	updateMinMax(const double& minX, const double& minY, const double& maxX,
+		const double& maxY);
 };
 }
 
