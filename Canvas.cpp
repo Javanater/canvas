@@ -77,6 +77,13 @@ void Canvas::paint(wxDC* dc)
 		drawable != drawables.end(); ++drawable)
 		(*drawable)->draw(*this);
 
+	double minX, minY, maxX, maxY;
+	getBounds(minX, maxX, minY, maxY);
+	std::list<Drawable*>
+		treeDrawables = drawableTree.getDrawables(minX, minY, maxX, maxY);
+	for (Drawable* drawable : treeDrawables)
+		drawable->draw(*this);
+
 	if (message.length())
 	{
 		wxColour color(255, 0, 0);
@@ -293,9 +300,14 @@ void Canvas::OnEnter(wxMouseEvent& event)
 
 void Canvas::add(Drawable* drawable)
 {
-	if (drawable != NULL)
+	if (drawable)
 	{
-		drawables.insert(drawable);
+		BoundedDrawable
+			* boundedDrawable = dynamic_cast<BoundedDrawable*>(drawable);
+		if (boundedDrawable)
+			drawableTree.insert(boundedDrawable);
+		else
+			drawables.insert(drawable);
 		Refresh();
 	}
 }

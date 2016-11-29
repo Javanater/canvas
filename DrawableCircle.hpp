@@ -9,7 +9,7 @@
 
 namespace flabs
 {
-class DrawableCircle : public Drawable
+class DrawableCircle : public BoundedDrawable
 {
 public:
 	double   x, y, radius;

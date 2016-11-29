@@ -9,7 +9,7 @@
 
 namespace flabs
 {
-	class DrawableMarker : public Drawable
+class DrawableMarker : public BoundedDrawable
 	{
 		public:
 			enum Type
@@ -28,6 +28,8 @@ namespace flabs
 
 			DrawableMarker(double x, double y, char type,
 				wxColour color = wxColor(0, 0, 255), int level = 0);
+
+	void updateBounds();
 
 			virtual ~DrawableMarker();
 

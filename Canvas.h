@@ -11,6 +11,7 @@
 #include <wx/wx.h>
 #include <set>
 #include "Drawable.h"
+#include "DrawableTree.hpp"
 #include <Utilities/utilities.h>
 #include <Utilities/Notifier.h>
 #include <Utilities/Watchdog.h>
@@ -64,6 +65,7 @@ private:
 	Notifier<MouseEvent>        mouseLeftDownNotifier;
 	std::string                 message;
 	std::unique_ptr<Watchdog<>> messageWatchdog;
+	DrawableTree drawableTree;
 
 public:
 	Canvas(wxWindow* parent, int id);

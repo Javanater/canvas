@@ -6,7 +6,7 @@ set(SOURCE_FILES
 		CanvasFrame.cpp
 		CanvasFrame.h
 		Drawable.cpp
-		Drawable.h DrawableLine.cpp DrawableLine.hpp DrawableCircle.cpp DrawableCircle.hpp DrawableMarker.cpp DrawableMarker.hpp)
+		Drawable.h DrawableLine.cpp DrawableLine.hpp DrawableCircle.cpp DrawableCircle.hpp DrawableMarker.cpp DrawableMarker.hpp DrawableTree.cpp DrawableTree.hpp BoundedDrawable.hpp BoundedDrawable.cpp)
 add_library(${PROJECT_NAME} ${SOURCE_FILES})
 target_link_libraries(${PROJECT_NAME} ${wxWidgets_LIBRARIES})
 target_link_libraries(${PROJECT_NAME} Utilities)

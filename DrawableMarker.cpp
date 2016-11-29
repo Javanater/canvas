@@ -3,17 +3,22 @@
 //
 
 #include "DrawableMarker.hpp"
+#include <limits>
+
+using namespace std;
 
 flabs::DrawableMarker::DrawableMarker(double x, double y,
 	flabs::DrawableMarker::Type type, wxColour color, int level) :
-	x(x), y(y), type(type), color(color), Drawable(level)
+	x(x), y(y), type(type), color(color), BoundedDrawable(level)
 {
+	updateBounds();
 }
 
 flabs::DrawableMarker::DrawableMarker(double x, double y, char type,
 	wxColour color, int level) :
-	x(x), y(y), type(typeFromChar(type)), color(color), Drawable(level)
+	x(x), y(y), type(typeFromChar(type)), color(color), BoundedDrawable(level)
 {
+	updateBounds();
 }
 
 flabs::DrawableMarker::~DrawableMarker()
@@ -76,4 +81,12 @@ flabs::DrawableMarker::Type flabs::DrawableMarker::typeFromChar(char c)
 	if (c == 'x' || c == 'X')
 		return X;
 	return DOT;
+}
+
+void flabs::DrawableMarker::updateBounds()
+{
+	minX = x - numeric_limits<double>::epsilon();
+	maxX = x + numeric_limits<double>::epsilon();
+	minY = y - numeric_limits<double>::epsilon();
+	maxY = y + numeric_limits<double>::epsilon();
 }
