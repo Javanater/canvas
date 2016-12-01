@@ -400,6 +400,15 @@ void Canvas::string(double x, double y, const char* str)
 	dc->DrawText(wxString::FromUTF8(str), unitXToPixelX(x), unitYToPixelY(y));
 }
 
+void Canvas::string(double x, double y, const std::string str)
+{
+	wxSize textSize = dc->GetTextExtent(str);
+	updateMinMax(x, y, x + xPixelsToUnits(textSize.x),
+		y + yPixelsToUnits(textSize.y));
+	dc->DrawText(wxString::FromUTF8(str.c_str()), unitXToPixelX(x),
+		unitYToPixelY(y));
+}
+
 int Canvas::unitXToPixelX(double x)
 {
 	return (int) ((x - this->x) / xScale + .5) + GetSize().x / 2;

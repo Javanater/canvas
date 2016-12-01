@@ -124,6 +124,8 @@ public:
 
 	void string(double x, double y, const char* str);
 
+	void string(double x, double y, const std::string str);
+
 	template<class Iterator>
 	void polygon(Iterator start, Iterator end)
 	{
