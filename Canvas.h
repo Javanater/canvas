@@ -52,6 +52,7 @@ private:
 	double                      x;
 	double                      y;
 	double                      minX, minY, maxX, maxY;
+	double       minBoundedX, minBoundedY, maxBoundedX, maxBoundedY;
 	bool                        dragging;
 	int                         lastMouseX;
 	int                         lastMouseY;

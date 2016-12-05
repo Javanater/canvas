@@ -30,6 +30,8 @@ Canvas::Canvas(wxWindow* parent, int id) :
 	majorDivisionColor(190, 190, 190), minorDivisionColor(205, 205, 205),
 	majorDivisionLabelColor(120, 120, 120), showGrid(true)
 {
+	minBoundedX = minBoundedY = numeric_limits<double>::infinity();
+	maxBoundedX = maxBoundedY = -numeric_limits<double>::infinity();
 	wxInitAllImageHandlers();
 	//TODO: Switch to Bind
 	Connect(wxEVT_PAINT, wxPaintEventHandler(Canvas::paintEvent));
@@ -71,8 +73,10 @@ void Canvas::paint(wxDC* dc)
 	if (showGrid)
 		drawGrid();
 
-	minX = minY = numeric_limits<double>::max();
-	maxX = maxY = numeric_limits<double>::lowest();
+	minX = minBoundedX;
+	minY = minBoundedY;
+	maxX = maxBoundedX;
+	maxY = maxBoundedY;
 	for (DrawableSet::iterator drawable = drawables.begin();
 		drawable != drawables.end(); ++drawable)
 		(*drawable)->draw(*this);
@@ -305,7 +309,13 @@ void Canvas::add(Drawable* drawable)
 		BoundedDrawable
 			* boundedDrawable = dynamic_cast<BoundedDrawable*>(drawable);
 		if (boundedDrawable)
+		{
 			drawableTree.insert(boundedDrawable);
+			this->minBoundedX = min(this->minBoundedX, boundedDrawable->minX);
+			this->minBoundedY = min(this->minBoundedY, boundedDrawable->minY);
+			this->maxBoundedX = max(this->maxBoundedX, boundedDrawable->maxX);
+			this->maxBoundedY = max(this->maxBoundedY, boundedDrawable->maxY);
+		}
 		else
 			drawables.insert(drawable);
 		Refresh();
