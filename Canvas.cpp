@@ -28,7 +28,8 @@ Canvas::Canvas(wxWindow* parent, int id) :
 	dragging(false), lastMouseX(0), lastMouseY(0), drawColor(0, 0, 0),
 	brushStyle(wxBRUSHSTYLE_SOLID), backgroundColor(220, 220, 220),
 	majorDivisionColor(190, 190, 190), minorDivisionColor(205, 205, 205),
-	majorDivisionLabelColor(120, 120, 120), showGrid(true)
+	majorDivisionLabelColor(120, 120, 120), showGrid(true),
+	zoomFitPending(false), drawnOnce(false)
 {
 	minBoundedX = minBoundedY = numeric_limits<double>::infinity();
 	maxBoundedX = maxBoundedY = -numeric_limits<double>::infinity();
@@ -67,19 +68,30 @@ void Canvas::paint(wxDC* dc)
 {
 	//TODO: Should dc be atomic? Guarded? Yes
 	this->dc = dc;
-	fill().setColor(backgroundColor);
 	wxSize size = GetSize();
-	dc->DrawRectangle(0, 0, size.x, size.y);
-	if (showGrid)
-		drawGrid();
 
-	minX = minBoundedX;
-	minY = minBoundedY;
-	maxX = maxBoundedX;
-	maxY = maxBoundedY;
-	for (DrawableSet::iterator drawable = drawables.begin();
-		drawable != drawables.end(); ++drawable)
-		(*drawable)->draw(*this);
+	while (true)
+	{
+		fill().setColor(backgroundColor);
+		dc->DrawRectangle(0, 0, size.x, size.y);
+		if (showGrid)
+			drawGrid();
+
+		minX = minBoundedX;
+		minY = minBoundedY;
+		maxX = maxBoundedX;
+		maxY = maxBoundedY;
+		for (DrawableSet::iterator drawable = drawables.begin();
+			drawable != drawables.end(); ++drawable)
+			(*drawable)->draw(*this);
+
+		drawnOnce = true;
+		if (!zoomFitPending)
+			break;
+
+		zoomFitPending = false;
+		zoomFit();
+	}
 
 	double minX, minY, maxX, maxY;
 	getBounds(minX, maxX, minY, maxY);
@@ -180,6 +192,7 @@ void Canvas::OnMouseMoved(wxMouseEvent& event)
 		y -= yPixelsToUnits(lastMouseY - event.m_y);
 		lastMouseX = event.m_x;
 		lastMouseY = event.m_y;
+		notifyBoundsChanged();
 		Refresh();
 	}
 }
@@ -242,15 +255,7 @@ void Canvas::OnPopupSelected(wxCommandEvent& event)
 			break;
 
 		case ID_ZOOM_FIT:
-			if (minX < maxX && minY < maxY)
-			{
-				x = (maxX + minX) / 2;
-				y = (maxY + minY) / 2;
-				wxSize size = GetSize();
-				xScale = (maxX - minX) / size.x * 1.2;
-				yScale = (maxY - minY) / size.y * 1.2;
-				Refresh();
-			}
+			zoomFit();
 			break;
 
 		case ID_SAVE_IMAGE:
@@ -293,6 +298,7 @@ void Canvas::OnMouseWheel(wxMouseEvent& event)
 	double newY = pixelYToUnitY(event.m_y);
 	x += oldX - newX;
 	y += oldY - newY;
+	notifyBoundsChanged();
 	Refresh();
 }
 
@@ -462,6 +468,12 @@ void Canvas::addMouseLeftDownNotifier(std::function<void(MouseEvent)> f)
 	mouseLeftDownNotifier.addListener(f);
 }
 
+void
+Canvas::addBoundsListener(std::function<void(double, double, double, double)> f)
+{
+	boundsNotifier.addListener(f);
+}
+
 void Canvas::briefMessage(std::string message)
 {
 	this->message = message;
@@ -503,5 +515,59 @@ Canvas::updateMinMax(const double& minX, const double& minY, const double& maxX,
 	this->minY = min(this->minY, minY);
 	this->maxX = max(this->maxX, maxX);
 	this->maxY = max(this->maxY, maxY);
+}
+
+void Canvas::zoomFit()
+{
+	if (!drawnOnce)
+		zoomFitPending = true;
+	else if (minX < maxX && minY < maxY)
+	{
+		x = (maxX + minX) / 2;
+		y = (maxY + minY) / 2;
+		wxSize size = GetSize();
+		xScale = (maxX - minX) / size.x * 1.2;
+		yScale = (maxY - minY) / size.y * 1.2;
+		notifyBoundsChanged();
+	}
+
+	Refresh();
+}
+
+void Canvas::notifyBoundsChanged()
+{
+	double minX, minY, maxX, maxY;
+	getBounds(minX, maxX, minY, maxY);
+	boundsNotifier.notify(minX, maxX, minY, maxY);
+}
+
+double Canvas::getXScale() const
+{
+	return xScale;
+}
+
+double Canvas::getYScale() const
+{
+	return yScale;
+}
+
+const wxColour& Canvas::getBackgroundColor() const
+{
+	return backgroundColor;
+}
+
+const wxColour& Canvas::getMajorDivisionColor() const
+{
+	return majorDivisionColor;
+}
+
+const wxColour& Canvas::getMinorDivisionColor() const
+{
+	return minorDivisionColor;
+}
+
+const wxColour& Canvas::getMajorDivisionLabelColor() const
+{
+	return majorDivisionLabelColor;
 }
 }

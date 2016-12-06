@@ -47,26 +47,30 @@ private:
 	/**
 	 * Units per pixel.
 	 */
-	double                      xScale;
-	double                      yScale;
-	double                      x;
-	double                      y;
-	double                      minX, minY, maxX, maxY;
-	double       minBoundedX, minBoundedY, maxBoundedX, maxBoundedY;
-	bool                        dragging;
-	int                         lastMouseX;
-	int                         lastMouseY;
-	wxColour                    drawColor;
-	wxBrushStyle                brushStyle;
-	wxColour                    backgroundColor;
-	wxColour                    majorDivisionColor;
-	wxColour                    minorDivisionColor;
-	wxColour                    majorDivisionLabelColor;
-	bool                        showGrid;
-	Notifier<MouseEvent>        mouseLeftDownNotifier;
-	std::string                 message;
-	std::unique_ptr<Watchdog<>> messageWatchdog;
-	DrawableTree drawableTree;
+	double                                   xScale;
+	double                                   yScale;
+	double                                   x;
+	double                                   y;
+	double                                   minX, minY, maxX, maxY;
+	double                                   minBoundedX, minBoundedY,
+											 maxBoundedX, maxBoundedY;
+	bool                                     dragging;
+	int                                      lastMouseX;
+	int                                      lastMouseY;
+	wxColour                                 drawColor;
+	wxBrushStyle                             brushStyle;
+	wxColour                                 backgroundColor;
+	wxColour                                 majorDivisionColor;
+	wxColour                                 minorDivisionColor;
+	wxColour                                 majorDivisionLabelColor;
+	bool                                     showGrid;
+	Notifier<MouseEvent>                     mouseLeftDownNotifier;
+	Notifier<double, double, double, double> boundsNotifier;
+	std::string                              message;
+	std::unique_ptr<Watchdog<>>              messageWatchdog;
+	DrawableTree                             drawableTree;
+	bool                                     drawnOnce;
+	bool                                     zoomFitPending;
 
 public:
 	Canvas(wxWindow* parent, int id);
@@ -180,6 +184,9 @@ public:
 
 	void addMouseLeftDownNotifier(std::function<void(MouseEvent)> f);
 
+	void
+	addBoundsListener(std::function<void(double, double, double, double)> f);
+
 	void briefMessage(std::string message);
 
 	void saveImage();
@@ -188,10 +195,26 @@ public:
 
 	void setScale(double scale);
 
+	void zoomFit();
+
+	double getXScale() const;
+
+	double getYScale() const;
+
+	const wxColour& getBackgroundColor() const;
+
+	const wxColour& getMajorDivisionColor() const;
+
+	const wxColour& getMinorDivisionColor() const;
+
+	const wxColour& getMajorDivisionLabelColor() const;
+
 private:
 	inline void
 	updateMinMax(const double& minX, const double& minY, const double& maxX,
 		const double& maxY);
+
+	void notifyBoundsChanged();
 };
 }
 
