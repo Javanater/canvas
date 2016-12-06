@@ -71,9 +71,12 @@ private:
 	DrawableTree                             drawableTree;
 	bool                                     drawnOnce;
 	bool                                     zoomFitPending;
+	bool                                     showGridLabels;
+	double                                   labelX, labelY;
+	std::string                              label;
 
 public:
-	Canvas(wxWindow* parent, int id);
+	Canvas(wxWindow* parent, int id = wxID_ANY);
 
 	virtual ~Canvas();
 
@@ -111,11 +114,18 @@ public:
 
 	void rectangle(double x, double y, double width, double height);
 
+	void rectanglePixel(double x, double y, int ndx, int pdx, int ndy, int pdy);
+
 	void circle(double x, double y, double radius);
 
 	void ellipse(double x, double y, double xRadius, double yRadius);
 
+	void ellipsePixel(double x, double y, int xRadius, int yRadius);
+
 	void lineSegment(double x1, double y1, double x2, double y2);
+
+	void
+	lineSegmentPixel(double x, double y, int ndx, int pdx, int ndy, int pdy);
 
 	/**
 	 * Draws an infinite line.
@@ -208,6 +218,30 @@ public:
 	const wxColour& getMinorDivisionColor() const;
 
 	const wxColour& getMajorDivisionLabelColor() const;
+
+	void setBackgroundColor(const wxColour& backgroundColor);
+
+	void setMajorDivisionColor(const wxColour& majorDivisionColor);
+
+	void setMinorDivisionColor(const wxColour& minorDivisionColor);
+
+	void setMajorDivisionLabelColor(const wxColour& majorDivisionLabelColor);
+
+	bool isShowGridLabels() const;
+
+	void setShowGridLabels(bool showGridLabels);
+
+	Drawable* getClosest(double x, double y);
+
+	Drawable* getClosestPixel(int x, int y);
+
+	/**
+	 * Places the label at the specified point. Overrides previous label.
+	 * @param x
+	 * @param y
+	 * @param label
+	 */
+	void setLabel(double x, double y, std::string label);
 
 private:
 	inline void

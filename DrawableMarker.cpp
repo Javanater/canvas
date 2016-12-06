@@ -28,44 +28,36 @@ flabs::DrawableMarker::~DrawableMarker()
 void flabs::DrawableMarker::draw(flabs::Canvas& canvas)
 {
 	canvas.setColor(color).draw();
-	double xRadius = canvas.xPixelsToUnits(4);
-	double yRadius = canvas.yPixelsToUnits(4);
 	switch (type)
 	{
 		case STAR:
-			canvas.lineSegment(x - xRadius, y - yRadius, x + xRadius,
-				y + yRadius);
-			canvas.lineSegment(x - xRadius, y + yRadius, x + xRadius,
-				y - yRadius);
+			canvas.lineSegmentPixel(x, y, -4, 4, -4, 4);
+			canvas.lineSegmentPixel(x, y, 4, -4, -4, 4);
 
 		case PLUS:
-			canvas.lineSegment(x - xRadius, y, x + xRadius, y);
-			canvas.lineSegment(x, y + yRadius, x, y - yRadius);
+			canvas.lineSegmentPixel(x, y, 0, 0, -4, 4);
+			canvas.lineSegmentPixel(x, y, -4, 4, 0, 0);
 			break;
 
 		case CIRCLE:
-			canvas.ellipse(x, y, xRadius, yRadius);
+			canvas.ellipsePixel(x, y, 4, 4);
 			break;
 
 		case X:
-			canvas.lineSegment(x - xRadius, y - yRadius, x + xRadius,
-				y + yRadius);
-			canvas.lineSegment(x - xRadius, y + yRadius, x + xRadius,
-				y - yRadius);
+			canvas.lineSegmentPixel(x, y, -4, 4, -4, 4);
+			canvas.lineSegmentPixel(x, y, 4, -4, -4, 4);
 			break;
 
 		case SQUARE:
-			canvas
-				.rectangle(x - xRadius, y - yRadius, xRadius * 2, yRadius * 2);
+			canvas.rectanglePixel(x, y, -4, -4, 4, 4);
 			break;
 
 		case BLOCK:
-			canvas.fill()
-				.rectangle(x - xRadius, y - yRadius, xRadius * 2, yRadius * 2);
+			canvas.fill().rectanglePixel(x, y, -4, -4, 4, 4);
 			break;
 
 		case DOT:
-			canvas.fill().ellipse(x, y, xRadius, yRadius);
+			canvas.fill().ellipsePixel(x, y, 4, 4);
 			break;
 	}
 }

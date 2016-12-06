@@ -10,6 +10,7 @@
 #include <math.h>
 #include <iostream>
 #include <sstream>
+#include <Math/Math.hpp>
 
 using namespace std;
 
@@ -23,16 +24,17 @@ using namespace std;
 namespace flabs
 {
 Canvas::Canvas(wxWindow* parent, int id) :
-	wxPanel(parent, id, wxDefaultPosition, wxSize(-1, 30), wxSUNKEN_BORDER),
-	parent(parent), dc(NULL), xScale(.01), yScale(.01), x(0), y(0),
-	dragging(false), lastMouseX(0), lastMouseY(0), drawColor(0, 0, 0),
+	wxPanel(parent, id, wxDefaultPosition, wxSize(-1, 30)), parent(parent),
+	dc(NULL), xScale(.01), yScale(.01), x(0), y(0), dragging(false),
+	lastMouseX(0), lastMouseY(0), drawColor(0, 0, 0),
 	brushStyle(wxBRUSHSTYLE_SOLID), backgroundColor(220, 220, 220),
 	majorDivisionColor(190, 190, 190), minorDivisionColor(205, 205, 205),
 	majorDivisionLabelColor(120, 120, 120), showGrid(true),
-	zoomFitPending(false), drawnOnce(false)
+	zoomFitPending(false), drawnOnce(false), showGridLabels(true)
 {
 	minBoundedX = minBoundedY = numeric_limits<double>::infinity();
 	maxBoundedX = maxBoundedY = -numeric_limits<double>::infinity();
+	SetBackgroundStyle(wxBG_STYLE_PAINT);
 	wxInitAllImageHandlers();
 	//TODO: Switch to Bind
 	Connect(wxEVT_PAINT, wxPaintEventHandler(Canvas::paintEvent));
@@ -89,7 +91,6 @@ void Canvas::paint(wxDC* dc)
 		if (!zoomFitPending)
 			break;
 
-		zoomFitPending = false;
 		zoomFit();
 	}
 
@@ -107,6 +108,12 @@ void Canvas::paint(wxDC* dc)
 		dc->DrawText(message,
 			size.x / 2 - dc->GetTextExtent(message.c_str()).x / 2,
 			(wxCoord) (size.y * .8));
+	}
+
+	if (label.length())
+	{
+		dc->SetTextForeground(majorDivisionLabelColor);
+		dc->DrawText(label, unitXToPixelX(labelX), unitYToPixelY(labelY));
 	}
 
 	this->dc = nullptr;
@@ -148,31 +155,34 @@ void Canvas::drawGrid()
 	for (double i = start; i <= end && w < 1000; i += yMajorDivision, ++w)
 		lineSegment(minX, i, maxX, i);
 
-	int lineHeight = dc->GetFontMetrics().height;
-	dc->SetTextForeground(majorDivisionLabelColor);
-	start = ceil(minX / xMajorDivision) * xMajorDivision;
-	end   = floor(maxX / xMajorDivision) * xMajorDivision;
-	for (double i = start; i <= end && w < 1000; i += xMajorDivision, ++w)
+	if (showGridLabels)
 	{
-		ostringstream stringStream;
-		stringStream.precision(1);
-		stringStream << scientific << i;
-		string(i, minY + yPixelsToUnits(lineHeight),
-			stringStream.str().c_str());
-		string(i, maxY, stringStream.str().c_str());
-	}
+		int lineHeight = dc->GetFontMetrics().height;
+		dc->SetTextForeground(majorDivisionLabelColor);
+		start = ceil(minX / xMajorDivision) * xMajorDivision;
+		end   = floor(maxX / xMajorDivision) * xMajorDivision;
+		for (double i = start; i <= end && w < 1000; i += xMajorDivision, ++w)
+		{
+			ostringstream stringStream;
+			stringStream.precision(1);
+			stringStream << scientific << i;
+			string(i, minY + yPixelsToUnits(lineHeight),
+				stringStream.str().c_str());
+			string(i, maxY, stringStream.str().c_str());
+		}
 
-	start = ceil(minY / yMajorDivision) * yMajorDivision;
-	end   = floor(maxY / yMajorDivision) * yMajorDivision;
-	for (double i = start; i <= end && w < 1000; i += yMajorDivision, ++w)
-	{
-		ostringstream stringStream;
-		stringStream.precision(1);
-		stringStream << scientific << i;
-		string(minX, i, stringStream.str().c_str());
-		string(maxX -
-				xPixelsToUnits(dc->GetTextExtent(stringStream.str().c_str()).x + 5),
-			i, stringStream.str().c_str());
+		start = ceil(minY / yMajorDivision) * yMajorDivision;
+		end   = floor(maxY / yMajorDivision) * yMajorDivision;
+		for (double i = start; i <= end && w < 1000; i += yMajorDivision, ++w)
+		{
+			ostringstream stringStream;
+			stringStream.precision(1);
+			stringStream << scientific << i;
+			string(minX, i, stringStream.str().c_str());
+			string(maxX - xPixelsToUnits(
+				dc->GetTextExtent(stringStream.str().c_str()).x + 5), i,
+				stringStream.str().c_str());
+		}
 	}
 
 	if (w >= 1000)
@@ -362,6 +372,14 @@ void Canvas::rectangle(double x, double y, double width, double height)
 		yUnitsToPixels(-height));
 }
 
+void
+Canvas::rectanglePixel(double x, double y, int ndx, int pdx, int ndy, int pdy)
+{
+	updateMinMax(x, y, x, y);
+	dc->DrawRectangle(unitXToPixelX(x) + ndx, unitYToPixelY(y) + ndy, pdx - ndx,
+		ndy - pdy);
+}
+
 void Canvas::circle(double x, double y, double radius)
 {
 	updateMinMax(x - radius, y - radius, x + radius, y + radius);
@@ -376,11 +394,26 @@ void Canvas::ellipse(double x, double y, double xRadius, double yRadius)
 		xUnitsToPixels(xRadius * 2), yUnitsToPixels(yRadius * 2), 0, 360);
 }
 
+void Canvas::ellipsePixel(double x, double y, int xRadius, int yRadius)
+{
+	updateMinMax(x, y, x, y);
+	dc->DrawEllipticArc(unitXToPixelX(x) - xRadius, unitYToPixelY(y) + yRadius,
+		xRadius * 2, yRadius * 2, 0, 360);
+}
+
 void Canvas::lineSegment(double x1, double y1, double x2, double y2)
 {
 	updateMinMax(min(x1, x2), min(y1, y2), max(x1, x2), max(y1, y2));
 	dc->DrawLine(unitXToPixelX(x1), unitYToPixelY(y1), unitXToPixelX(x2),
 		unitYToPixelY(y2));
+}
+
+void
+Canvas::lineSegmentPixel(double x, double y, int ndx, int pdx, int ndy, int pdy)
+{
+	updateMinMax(x, y, x, y);
+	dc->DrawLine(unitXToPixelX(x) + ndx, unitYToPixelY(y) + ndy,
+		unitXToPixelX(x) + pdx, unitYToPixelY(y) + pdy);
 }
 
 void Canvas::line(double x, double y, double nx, double ny)
@@ -523,8 +556,9 @@ void Canvas::zoomFit()
 		zoomFitPending = true;
 	else if (minX < maxX && minY < maxY)
 	{
-		x = (maxX + minX) / 2;
-		y = (maxY + minY) / 2;
+		zoomFitPending = false;
+		x              = (maxX + minX) / 2;
+		y              = (maxY + minY) / 2;
 		wxSize size = GetSize();
 		xScale = (maxX - minX) / size.x * 1.2;
 		yScale = (maxY - minY) / size.y * 1.2;
@@ -569,5 +603,128 @@ const wxColour& Canvas::getMinorDivisionColor() const
 const wxColour& Canvas::getMajorDivisionLabelColor() const
 {
 	return majorDivisionLabelColor;
+}
+
+bool Canvas::isShowGridLabels() const
+{
+	return showGridLabels;
+}
+
+void Canvas::setShowGridLabels(bool showGridLabels)
+{
+	Canvas::showGridLabels = showGridLabels;
+	Refresh();
+}
+
+void Canvas::setBackgroundColor(const wxColour& backgroundColor)
+{
+	Canvas::backgroundColor = backgroundColor;
+}
+
+void Canvas::setMajorDivisionColor(const wxColour& majorDivisionColor)
+{
+	Canvas::majorDivisionColor = majorDivisionColor;
+}
+
+void Canvas::setMinorDivisionColor(const wxColour& minorDivisionColor)
+{
+	Canvas::minorDivisionColor = minorDivisionColor;
+}
+
+void Canvas::setMajorDivisionLabelColor(const wxColour& majorDivisionLabelColor)
+{
+	Canvas::majorDivisionLabelColor = majorDivisionLabelColor;
+}
+
+Drawable* Canvas::getClosest(double x, double y)
+{
+	//TODO: Move to Tree
+	//TODO: Check if there are >0 in tree
+	//TODO: Fix possible infinite loop when >10 points are equidistant
+	std::list<Drawable*> closests;
+	double               minRadius = 0;
+	double               maxRadius = 1;
+	while (true)
+	{
+		double radius = (maxRadius + minRadius) / 2;
+		closests = drawableTree
+			.getDrawables(x - radius, y - radius, x + radius, y + radius);
+		if (closests.size() == 0)
+		{
+			minRadius = radius;
+			maxRadius *= 2;
+		}
+		else if (closests.size() > 10)
+			maxRadius = radius;
+		else
+			break;
+	}
+	double               range     = numeric_limits<double>::infinity();
+	Drawable     * closest = nullptr;
+	for (Drawable* d : closests)
+	{
+		BoundedDrawable* bd = (BoundedDrawable*) d;
+		double dx   = (bd->maxX + bd->minX) / 2;
+		double dy   = (bd->maxY + bd->minY) / 2;
+		double dist = flabs::hypot(x - dx, y - dy);
+		if (dist < range)
+		{
+			range   = dist;
+			closest = d;
+		}
+	}
+	return closest;
+}
+
+void Canvas::setLabel(double x, double y, std::string label)
+{
+	labelX = x;
+	labelY = y;
+	this->label = label;
+	Refresh();
+}
+
+Drawable* Canvas::getClosestPixel(int x, int y)
+{
+	//TODO: Move to Tree
+	//TODO: Check if there are >0 in tree
+	//TODO: Fix possible infinite loop when >10 points are equidistant
+//	std::list<Drawable*> closests;
+//	int               minRadius = 0;
+//	int               maxRadius = 100;
+//	while (maxRadius > 4)
+//	{
+//		int radius = (maxRadius + minRadius) / 2;
+//		closests = drawableTree
+//			.getDrawables(pixelXToUnitX(x - radius), pixelYToUnitY(y - radius),
+//				pixelXToUnitX(x + radius), pixelYToUnitY(y + radius));
+//		if (closests.size() == 0)
+//		{
+//			minRadius = radius;
+//			maxRadius *= 2;
+//		}
+//		else if (closests.size() > 10)
+//			maxRadius = radius;
+//		else
+//			break;
+//	}
+//	double               range     = numeric_limits<double>::infinity();
+//	Drawable     * closest = nullptr;
+//	for (Drawable* d : closests)
+//	{
+//		BoundedDrawable* bd = (BoundedDrawable*) d;
+//		double dx   = (bd->maxX + bd->minX) / 2;
+//		double dy   = (bd->maxY + bd->minY) / 2;
+//		double dist =
+//				   flabs::hypot(x - unitXToPixelX(dx), y - unitYToPixelY(dy));
+//		if (dist < range)
+//		{
+//			range   = dist;
+//			closest = d;
+//		}
+//	}
+//	return closest;
+
+
 }
 }
