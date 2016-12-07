@@ -5,7 +5,7 @@
 #ifndef PROJECTS_BOUNDEDDRAWABLE_HPP
 #define PROJECTS_BOUNDEDDRAWABLE_HPP
 
-#include "Drawable.h"
+#include "Drawable.hpp"
 
 namespace flabs
 {

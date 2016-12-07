@@ -5,7 +5,7 @@
 #ifndef PROJECTS_DRAWABLEMARKER_HPP
 #define PROJECTS_DRAWABLEMARKER_HPP
 
-#include "Canvas.h"
+#include "Canvas.hpp"
 
 namespace flabs
 {

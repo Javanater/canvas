@@ -5,7 +5,7 @@
 #ifndef PROJECTS_DRAWABLECIRCLE_HPP
 #define PROJECTS_DRAWABLECIRCLE_HPP
 
-#include "Canvas.h"
+#include "Canvas.hpp"
 
 namespace flabs
 {

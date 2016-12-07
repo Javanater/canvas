@@ -10,11 +10,11 @@
 
 #include <wx/wx.h>
 #include <set>
-#include "Drawable.h"
+#include "Drawable.hpp"
 #include "DrawableTree.hpp"
-#include <Utilities/utilities.h>
-#include <Utilities/Notifier.h>
-#include <Utilities/Watchdog.h>
+#include <Utilities/utilities.hpp>
+#include <Utilities/Notifier.hpp>
+#include <Utilities/Watchdog.hpp>
 #include <wx/dcbuffer.h>
 #include <iterator>
 #include <iostream>

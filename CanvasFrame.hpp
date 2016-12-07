@@ -9,7 +9,7 @@
 #define CANVASFRAME_H_
 
 #include <wx/wx.h>
-#include "Canvas.h"
+#include "Canvas.hpp"
 
 namespace flabs
 {

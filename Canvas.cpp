@@ -5,7 +5,7 @@
  *      Author: Madison
  */
 
-#include "Canvas.h"
+#include "Canvas.hpp"
 #include <list>
 #include <math.h>
 #include <iostream>
@@ -24,30 +24,28 @@ using namespace std;
 namespace flabs
 {
 Canvas::Canvas(wxWindow* parent, int id) :
-	wxPanel(parent, id, wxDefaultPosition, wxSize(-1, 30)), parent(parent),
-	dc(NULL), xScale(.01), yScale(.01), x(0), y(0), dragging(false),
-	lastMouseX(0), lastMouseY(0), drawColor(0, 0, 0),
-	brushStyle(wxBRUSHSTYLE_SOLID), backgroundColor(220, 220, 220),
-	majorDivisionColor(190, 190, 190), minorDivisionColor(205, 205, 205),
-	majorDivisionLabelColor(120, 120, 120), showGrid(true),
-	zoomFitPending(false), drawnOnce(false), showGridLabels(true)
+	wxPanel(parent, id), parent(parent), dc(nullptr), xScale(.01), yScale(.01),
+	x(0), y(0), dragging(false), lastMouseX(0), lastMouseY(0),
+	drawColor(0, 0, 0), brushStyle(wxBRUSHSTYLE_SOLID),
+	backgroundColor(220, 220, 220), majorDivisionColor(190, 190, 190),
+	minorDivisionColor(205, 205, 205), majorDivisionLabelColor(120, 120, 120),
+	showGrid(true), zoomFitPending(false), drawnOnce(false),
+	showGridLabels(true)
 {
 	minBoundedX = minBoundedY = numeric_limits<double>::infinity();
 	maxBoundedX = maxBoundedY = -numeric_limits<double>::infinity();
 	SetBackgroundStyle(wxBG_STYLE_PAINT);
 	wxInitAllImageHandlers();
-	//TODO: Switch to Bind
-	Connect(wxEVT_PAINT, wxPaintEventHandler(Canvas::paintEvent));
-	Connect(wxEVT_SIZE, wxSizeEventHandler(Canvas::OnSize));
-	Connect(wxEVT_MOTION, wxMouseEventHandler(Canvas::OnMouseMoved));
-	Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(Canvas::OnMouseLeftButton));
-	Connect(wxEVT_MIDDLE_DOWN, wxMouseEventHandler(Canvas::OnMouseButton));
-	Connect(wxEVT_RIGHT_DOWN, wxMouseEventHandler(Canvas::OnRightDown));
-	Connect(wxEVT_MIDDLE_UP, wxMouseEventHandler(Canvas::OnMouseButton));
-	Connect(wxEVT_MOUSEWHEEL, wxMouseEventHandler(Canvas::OnMouseWheel));
-	Connect(wxEVT_ERASE_BACKGROUND,
-		wxEraseEventHandler(Canvas::OnEraseBackground));
-	Connect(wxEVT_ENTER_WINDOW, wxMouseEventHandler(Canvas::OnEnter));
+	Bind(wxEVT_PAINT, &Canvas::paintEvent, this);
+	Bind(wxEVT_SIZE, &Canvas::OnSize, this);
+	Bind(wxEVT_MOTION, &Canvas::OnMouseMoved, this);
+	Bind(wxEVT_LEFT_DOWN, &Canvas::OnMouseLeftButton, this);
+	Bind(wxEVT_MIDDLE_DOWN, &Canvas::OnMouseButton, this);
+	Bind(wxEVT_RIGHT_DOWN, &Canvas::OnRightDown, this);
+	Bind(wxEVT_MIDDLE_UP, &Canvas::OnMouseButton, this);
+	Bind(wxEVT_MOUSEWHEEL, &Canvas::OnMouseWheel, this);
+	Bind(wxEVT_ERASE_BACKGROUND, &Canvas::OnEraseBackground, this);
+	Bind(wxEVT_ENTER_WINDOW, &Canvas::OnEnter, this);
 }
 
 Canvas::~Canvas()
@@ -237,12 +235,11 @@ void Canvas::OnRightDown(wxMouseEvent& event)
 {
 	wxMenu menu;
 	menu.AppendCheckItem(ID_SHOWGRID, wxT("Show Grid"))->Check(showGrid);
-	menu.Append(ID_GOTO_HOME, wxT("Go to (0, 0)"));
+	menu.Append(ID_GOTO_HOME, wxT("Go Home"));
 	menu.Append(ID_ZOOM_FIT, wxT("Zoom Fit"));
 	menu.Append(ID_SYNC_X_AND_Y_SCALE, wxT("Sync X and Y Scale"));
 	menu.Append(ID_SAVE_IMAGE, wxT("Save Image"));
-	menu.Connect(wxEVT_COMMAND_MENU_SELECTED,
-		wxCommandEventHandler(OnPopupSelected), NULL, this);
+	menu.Bind(wxEVT_COMMAND_MENU_SELECTED, &Canvas::OnPopupSelected, this);
 	//TODO: Add Go to coordinate
 	//TODO: Add lock screen
 	//TODO: Add show mouse option
