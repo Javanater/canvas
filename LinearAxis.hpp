@@ -12,13 +12,21 @@ namespace flabs
 class LinearAxis : public Axis
 {
 public:
-	virtual double pixelToUnitImpl(int pixel);
+	LinearAxis(bool invert = false);
 
-	virtual int unitToPixelImpl(double unit);
+	virtual ~LinearAxis() = default;
+
+	virtual double pixelToUnitImpl(int pixel) const;
+
+	virtual int unitToPixelImpl(double unit) const;
 
 	virtual void panTo(int pixel);
 
 	virtual void zoom(int pixel, int clicks);
+
+	virtual void home();
+
+	virtual void zoomFit();
 };
 }
 

@@ -45,19 +45,11 @@ private:
 	typedef std::multiset<Drawable*, lessPointer<Drawable*>> DrawableSet;
 	DrawableSet                                              drawables;
 	wxDC* dc;
-
-	/**
-	 * Units per pixel.
-	 */
-	double                                   xScale;
-	double                                   yScale;
-	double                                   x;
-	double                                   y;
-	double                                   minX, minY, maxX, maxY;
-	double                                   minBoundedX, minBoundedY,
-											 maxBoundedX, maxBoundedY;
-	int                                      lastMouseX;
-	int                                      lastMouseY;
+	Axis* xAxis;
+	Axis* yAxis;
+	//TODO: Move to tree
+	double                      minBoundedX, minBoundedY,
+								maxBoundedX, maxBoundedY;
 	wxColour                                 drawColor;
 	wxBrushStyle                             brushStyle;
 	wxColour                                 backgroundColor;
@@ -112,6 +104,10 @@ public:
 
 	Canvas& setColor(wxColour color);
 
+	Axis* getXAxis() const;
+
+	Axis* getYAxis() const;
+
 	void drawGrid();
 
 	void rectangle(double x, double y, double width, double height);
@@ -162,26 +158,6 @@ public:
 		free(array);
 	}
 
-	inline double xPixelsToUnits(int pixels)
-	{
-		return pixels * xScale;
-	}
-
-	inline int xUnitsToPixels(double units)
-	{
-		return (int) (units / xScale + .5);
-	}
-
-	inline double yPixelsToUnits(int pixels)
-	{
-		return pixels * yScale;
-	}
-
-	inline int yUnitsToPixels(double units)
-	{
-		return (int) (units / yScale + .5);
-	}
-
 	int unitXToPixelX(double x);
 
 	int unitYToPixelY(double y);
@@ -208,10 +184,6 @@ public:
 	void setScale(double scale);
 
 	void zoomFit();
-
-	double getXScale() const;
-
-	double getYScale() const;
 
 	const wxColour& getBackgroundColor() const;
 

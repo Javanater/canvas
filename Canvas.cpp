@@ -11,6 +11,7 @@
 #include <iostream>
 #include <sstream>
 #include <Math/Math.hpp>
+#include "LinearAxis.hpp"
 
 using namespace std;
 
@@ -24,13 +25,12 @@ using namespace std;
 namespace flabs
 {
 Canvas::Canvas(wxWindow* parent, int id) :
-	wxPanel(parent, id), parent(parent), dc(nullptr), xScale(.01), yScale(.01),
-	x(0), y(0), lastMouseX(0), lastMouseY(0),
+	wxPanel(parent, id), parent(parent), dc(nullptr),
 	drawColor(0, 0, 0), brushStyle(wxBRUSHSTYLE_SOLID),
 	backgroundColor(220, 220, 220), majorDivisionColor(190, 190, 190),
 	minorDivisionColor(205, 205, 205), majorDivisionLabelColor(120, 120, 120),
 	showGrid(true), zoomFitPending(false), drawnOnce(false),
-	showGridLabels(true)
+	showGridLabels(true), xAxis(new LinearAxis()), yAxis(new LinearAxis(true))
 {
 	minBoundedX = minBoundedY = numeric_limits<double>::infinity();
 	maxBoundedX = maxBoundedY = -numeric_limits<double>::infinity();
@@ -54,6 +54,8 @@ Canvas::~Canvas()
 
 void Canvas::OnSize(wxSizeEvent& event)
 {
+	xAxis->setSize(event.m_size.x);
+	yAxis->setSize(event.m_size.y);
 	Refresh();
 }
 
@@ -70,6 +72,7 @@ void Canvas::paint(wxDC* dc)
 	this->dc = dc;
 	wxSize size = GetSize();
 
+	//TODO: Simplify
 	while (true)
 	{
 		fill().setColor(backgroundColor);
@@ -77,10 +80,10 @@ void Canvas::paint(wxDC* dc)
 		if (showGrid)
 			drawGrid();
 
-		minX = minBoundedX;
-		minY = minBoundedY;
-		maxX = maxBoundedX;
-		maxY = maxBoundedY;
+		xAxis->resetMinmax();
+		yAxis->resetMinmax();
+		xAxis->minmax({minBoundedX, maxBoundedX});
+		yAxis->minmax({minBoundedY, maxBoundedY});
 		for (DrawableSet::iterator drawable = drawables.begin();
 			drawable != drawables.end(); ++drawable)
 			(*drawable)->draw(*this);
@@ -119,11 +122,11 @@ void Canvas::paint(wxDC* dc)
 
 void Canvas::drawGrid()
 {
-	// TODO: increase efficiency
-	double xGridScale     = (double) pow(2, floor(log2(xScale)));
+	// TODO: Move logic to Axis
+	double xGridScale     = (double) pow(2, floor(log2(xAxis->getScale())));
 	double xMajorDivision = xGridScale * 100;
 	double xMinorDivision = xGridScale * 10;
-	double yGridScale     = (double) pow(2, floor(log2(yScale)));
+	double yGridScale     = (double) pow(2, floor(log2(yAxis->getScale())));
 	double yMajorDivision = yGridScale * 100;
 	double yMinorDivision = yGridScale * 10;
 	double minX, maxX, minY, maxY;
@@ -164,8 +167,8 @@ void Canvas::drawGrid()
 			ostringstream stringStream;
 			stringStream.precision(1);
 			stringStream << scientific << i;
-			string(i, minY + yPixelsToUnits(lineHeight),
-				stringStream.str().c_str());
+//			string(i, minY + yPixelsToUnits(lineHeight),
+//				stringStream.str().c_str());
 			string(i, maxY, stringStream.str().c_str());
 		}
 
@@ -177,29 +180,30 @@ void Canvas::drawGrid()
 			stringStream.precision(1);
 			stringStream << scientific << i;
 			string(minX, i, stringStream.str().c_str());
-			string(maxX - xPixelsToUnits(
-				dc->GetTextExtent(stringStream.str().c_str()).x + 5), i,
-				stringStream.str().c_str());
+//			string(maxX - xPixelsToUnits(
+//				dc->GetTextExtent(stringStream.str().c_str()).x + 5), i,
+//				stringStream.str().c_str());
 		}
 	}
 
 	if (w >= 1000)
 	{
-		x      = y      = 0;
-		xScale = yScale = .01;
+		//TODO: Check for this while zooming
+		xAxis->home();
+		yAxis->home();
+		xAxis->setScale(.01);
+		yAxis->setScale(.01);
 		briefMessage("Zoom exceeded 64 bit precision limits");
 	}
 }
 
 void Canvas::OnMouseMoved(wxMouseEvent& event)
 {
-	SetCursor(wxCursor(wxCURSOR_CROSS));
 	if (event.MiddleIsDown() && event.Dragging())
 	{
-		x += xPixelsToUnits(lastMouseX - event.m_x);
-		y -= yPixelsToUnits(lastMouseY - event.m_y);
-		lastMouseX = event.m_x;
-		lastMouseY = event.m_y;
+		SetCursor(wxCursor(wxCURSOR_CROSS));
+		xAxis->panTo(event.m_x);
+		yAxis->panTo(event.m_y);
 		notifyBoundsChanged();
 		Refresh();
 	}
@@ -209,8 +213,8 @@ void Canvas::OnMouseButton(wxMouseEvent& event)
 {
 	if (event.m_middleDown)
 	{
-		lastMouseX = event.m_x;
-		lastMouseY = event.m_y;
+		xAxis->startPan(event.m_x);
+		yAxis->startPan(event.m_y);
 	}
 }
 
@@ -253,8 +257,8 @@ void Canvas::OnPopupSelected(wxCommandEvent& event)
 			break;
 
 		case ID_GOTO_HOME:
-			x = 0;
-			y = 0;
+			xAxis->home();
+			yAxis->home();
 			Refresh();
 			break;
 
@@ -267,10 +271,10 @@ void Canvas::OnPopupSelected(wxCommandEvent& event)
 			break;
 
 		case ID_SYNC_X_AND_Y_SCALE:
-			if (xScale > yScale)
-				yScale = xScale;
+			if (xAxis->getScale() > yAxis->getScale())
+				yAxis->setScale(xAxis->getScale());
 			else
-				xScale = yScale;
+				xAxis->setScale(yAxis->getScale());
 			Refresh();
 			break;
 
@@ -281,9 +285,6 @@ void Canvas::OnPopupSelected(wxCommandEvent& event)
 
 void Canvas::OnMouseWheel(wxMouseEvent& event)
 {
-	double oldX = pixelXToUnitX(event.m_x);
-	double oldY = pixelYToUnitY(event.m_y);
-
 	if (!event.ControlDown() && !event.ShiftDown())
 		SetCursor(wxCursor(wxCURSOR_SIZING));
 	else if (!event.ControlDown())
@@ -292,16 +293,11 @@ void Canvas::OnMouseWheel(wxMouseEvent& event)
 		SetCursor(wxCursor(wxCURSOR_SIZEWE));
 
 	if (!event.ControlDown())
-		yScale = (double) pow(2,
-			log2(yScale) - event.GetWheelRotation() / 120. / 10);
-	if (!event.ShiftDown())
-		xScale = (double) pow(2,
-			log2(xScale) - event.GetWheelRotation() / 120. / 10);
+		yAxis->zoom(event.m_y, event.GetWheelRotation());
 
-	double newX = pixelXToUnitX(event.m_x);
-	double newY = pixelYToUnitY(event.m_y);
-	x += oldX - newX;
-	y += oldY - newY;
+	if (!event.ShiftDown())
+		xAxis->zoom(event.m_x, event.GetWheelRotation());
+
 	notifyBoundsChanged();
 	Refresh();
 }
@@ -363,8 +359,8 @@ Canvas& Canvas::setColor(wxColour color)
 void Canvas::rectangle(double x, double y, double width, double height)
 {
 	updateMinMax(x, y, x + width, y + height);
-	dc->DrawRectangle(unitXToPixelX(x), unitYToPixelY(y), xUnitsToPixels(width),
-		yUnitsToPixels(-height));
+	dc->DrawRectangle(unitXToPixelX(x), unitYToPixelY(y),
+		xAxis->pixelLength(x, width), yAxis->pixelLength(y, height));
 }
 
 void
@@ -379,14 +375,16 @@ void Canvas::circle(double x, double y, double radius)
 {
 	updateMinMax(x - radius, y - radius, x + radius, y + radius);
 	dc->DrawEllipticArc(unitXToPixelX(x - radius), unitYToPixelY(y + radius),
-		xUnitsToPixels(radius * 2), yUnitsToPixels(radius * 2), 0, 360);
+		xAxis->pixelLength(x - radius, radius * 2),
+		yAxis->pixelLength(y - radius, radius * 2), 0, 360);
 }
 
 void Canvas::ellipse(double x, double y, double xRadius, double yRadius)
 {
 	updateMinMax(x - xRadius, y - yRadius, x + xRadius, y + yRadius);
 	dc->DrawEllipticArc(unitXToPixelX(x - xRadius), unitYToPixelY(y + yRadius),
-		xUnitsToPixels(xRadius * 2), yUnitsToPixels(yRadius * 2), 0, 360);
+		xAxis->pixelLength(x - xRadius, xRadius * 2),
+		yAxis->pixelLength(y - yRadius, yRadius * 2), 0, 360);
 }
 
 void Canvas::ellipsePixel(double x, double y, int xRadius, int yRadius)
@@ -439,38 +437,36 @@ void Canvas::line(double x, double y, double nx, double ny)
 void Canvas::string(double x, double y, const char* str)
 {
 	wxSize textSize = dc->GetTextExtent(str);
-	updateMinMax(x, y, x + xPixelsToUnits(textSize.x),
-		y + yPixelsToUnits(textSize.y));
+	updateMinMax(x, y, x, y);
 	dc->DrawText(wxString::FromUTF8(str), unitXToPixelX(x), unitYToPixelY(y));
 }
 
 void Canvas::string(double x, double y, const std::string str)
 {
 	wxSize textSize = dc->GetTextExtent(str);
-	updateMinMax(x, y, x + xPixelsToUnits(textSize.x),
-		y + yPixelsToUnits(textSize.y));
+	updateMinMax(x, y, x, y);
 	dc->DrawText(wxString::FromUTF8(str.c_str()), unitXToPixelX(x),
 		unitYToPixelY(y));
 }
 
 int Canvas::unitXToPixelX(double x)
 {
-	return (int) ((x - this->x) / xScale + .5) + GetSize().x / 2;
+	return xAxis->unitToPixel(x);
 }
 
 int Canvas::unitYToPixelY(double y)
 {
-	return GetSize().y / 2 - (int) ((y - this->y) / yScale + .5);
+	return yAxis->unitToPixel(y);
 }
 
 inline double Canvas::pixelXToUnitX(int x)
 {
-	return (x - GetSize().x / 2) * xScale + this->x;
+	return xAxis->pixelToUnit(x);
 }
 
 inline double Canvas::pixelYToUnitY(int y)
 {
-	return this->y - (y - GetSize().y / 2) * yScale;
+	return yAxis->pixelToUnit(y);
 }
 
 void Canvas::OnEraseBackground(wxEraseEvent& event)
@@ -532,31 +528,27 @@ void Canvas::saveImage()
 
 void Canvas::setScale(double scale)
 {
-	xScale = yScale = scale;
+	xAxis->setScale(scale);
+	yAxis->setScale(scale);
 }
 
 void
 Canvas::updateMinMax(const double& minX, const double& minY, const double& maxX,
 	const double& maxY)
 {
-	this->minX = min(this->minX, minX);
-	this->minY = min(this->minY, minY);
-	this->maxX = max(this->maxX, maxX);
-	this->maxY = max(this->maxY, maxY);
+	xAxis->minmax({minX, maxX});
+	yAxis->minmax({minY, maxY});
 }
 
 void Canvas::zoomFit()
 {
 	if (!drawnOnce)
 		zoomFitPending = true;
-	else if (minX < maxX && minY < maxY)
+	else
 	{
 		zoomFitPending = false;
-		x              = (maxX + minX) / 2;
-		y              = (maxY + minY) / 2;
-		wxSize size = GetSize();
-		xScale = (maxX - minX) / size.x * 1.2;
-		yScale = (maxY - minY) / size.y * 1.2;
+		xAxis->zoomFit();
+		yAxis->zoomFit();
 		notifyBoundsChanged();
 	}
 
@@ -568,16 +560,6 @@ void Canvas::notifyBoundsChanged()
 	double minX, minY, maxX, maxY;
 	getBounds(minX, maxX, minY, maxY);
 	boundsNotifier.notify(minX, maxX, minY, maxY);
-}
-
-double Canvas::getXScale() const
-{
-	return xScale;
-}
-
-double Canvas::getYScale() const
-{
-	return yScale;
 }
 
 const wxColour& Canvas::getBackgroundColor() const
@@ -698,5 +680,15 @@ Drawable* Canvas::getClosestPixel(int x, int y)
 		}
 	}
 	return closest;
+}
+
+Axis* Canvas::getXAxis() const
+{
+	return xAxis;
+}
+
+Axis* Canvas::getYAxis() const
+{
+	return yAxis;
 }
 }

@@ -4,16 +4,21 @@
 
 #include "Axis.hpp"
 
+using namespace std;
+
 namespace flabs
 {
-Axis::Axis(bool invert) : invert(invert)
+Axis::Axis(bool invert, double scale, double center) :
+	invert(invert), scale(scale), center(center)
 {
+	resetMinmax();
 }
 
 void Axis::startPan(int pixel)
 {
-	panStartPixel = pixel;
-	panStartUnit  = pixelToUnit(pixel);
+	panStartPixel  = pixel;
+	panStartUnit   = pixelToUnit(pixel);
+	panStartCenter = center;
 }
 
 int Axis::getSize() const
@@ -52,5 +57,31 @@ int Axis::unitToPixel(double unit) const
 		pixel = size - pixel;
 
 	return pixel;
+}
+
+void Axis::resetMinmax()
+{
+	minimum = numeric_limits<double>::infinity();
+	maximum = -numeric_limits<double>::infinity();
+}
+
+double Axis::length(int start, int length) const
+{
+	return pixelToUnit(start + length) - pixelToUnit(start);
+}
+
+int Axis::pixelLength(double start, double length) const
+{
+	return unitToPixel(start) - unitToPixel(start + length);
+}
+
+double Axis::getScale() const
+{
+	return scale;
+}
+
+void Axis::setScale(double scale)
+{
+	Axis::scale = scale;
 }
 }

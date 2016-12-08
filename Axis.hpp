@@ -13,6 +13,9 @@ class Axis
 {
 protected:
 	double center;
+	/**
+	 * Units per pixel.
+	 */
 	double scale;
 	double minimum;
 	double maximum;
@@ -23,7 +26,7 @@ protected:
 	bool   invert;
 
 public:
-	Axis(bool invert = false);
+	Axis(bool invert = false, double scale = .01, double center = 0);
 
 	virtual ~Axis() = default;
 
@@ -41,17 +44,32 @@ public:
 
 	int unitToPixel(double unit) const;
 
-	template<class T, class... Args>
-	inline void minmax(const T t, const Args... args)
+	double length(int start, int length) const;
+
+	int pixelLength(double start, double length) const;
+
+	double getScale() const;
+
+	void setScale(double scale);
+
+	void minmax(const std::initializer_list<double> values)
 	{
-		std::tie(minimum, maximum) = minmax(minimum, maximum, t, args...);
-//		minimum = min<double, T, Args...>(minimum, t, args...);
-//		maximum = max<double, T, Args...>(maximum, t, args...);
-	};
+		for (const double& value : values)
+		{
+			minimum = std::min(minimum, value);
+			maximum = std::max(maximum, value);
+		}
+	}
+
+	void resetMinmax();
 
 	virtual void panTo(int pixel) = 0;
 
 	virtual void zoom(int pixel, int clicks) = 0;
+
+	virtual void zoomFit() = 0;
+
+	virtual void home() = 0;
 
 protected:
 	//TODO: Better name
