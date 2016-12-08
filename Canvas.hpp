@@ -11,7 +11,9 @@
 #include <wx/wx.h>
 #include <set>
 #include "Drawable.hpp"
+#include "BoundedDrawable.hpp"
 #include "DrawableTree.hpp"
+#include "Axis.hpp"
 #include <Utilities/utilities.hpp>
 #include <Utilities/Notifier.hpp>
 #include <Utilities/Watchdog.hpp>
@@ -54,7 +56,6 @@ private:
 	double                                   minX, minY, maxX, maxY;
 	double                                   minBoundedX, minBoundedY,
 											 maxBoundedX, maxBoundedY;
-	bool                                     dragging;
 	int                                      lastMouseX;
 	int                                      lastMouseY;
 	wxColour                                 drawColor;
@@ -74,6 +75,7 @@ private:
 	bool                                     showGridLabels;
 	double                                   labelX, labelY;
 	std::string                              label;
+	std::list<BoundedDrawable*> boundedDrawables;
 
 public:
 	Canvas(wxWindow* parent, int id = wxID_ANY);

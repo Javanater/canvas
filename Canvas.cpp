@@ -25,7 +25,7 @@ namespace flabs
 {
 Canvas::Canvas(wxWindow* parent, int id) :
 	wxPanel(parent, id), parent(parent), dc(nullptr), xScale(.01), yScale(.01),
-	x(0), y(0), dragging(false), lastMouseX(0), lastMouseY(0),
+	x(0), y(0), lastMouseX(0), lastMouseY(0),
 	drawColor(0, 0, 0), brushStyle(wxBRUSHSTYLE_SOLID),
 	backgroundColor(220, 220, 220), majorDivisionColor(190, 190, 190),
 	minorDivisionColor(205, 205, 205), majorDivisionLabelColor(120, 120, 120),
@@ -194,7 +194,7 @@ void Canvas::drawGrid()
 void Canvas::OnMouseMoved(wxMouseEvent& event)
 {
 	SetCursor(wxCursor(wxCURSOR_CROSS));
-	if (dragging)
+	if (event.MiddleIsDown() && event.Dragging())
 	{
 		x += xPixelsToUnits(lastMouseX - event.m_x);
 		y -= yPixelsToUnits(lastMouseY - event.m_y);
@@ -211,10 +211,7 @@ void Canvas::OnMouseButton(wxMouseEvent& event)
 	{
 		lastMouseX = event.m_x;
 		lastMouseY = event.m_y;
-		dragging   = true;
 	}
-	else
-		dragging = false;
 }
 
 void Canvas::OnMouseLeftButton(wxMouseEvent& event)
@@ -324,6 +321,7 @@ void Canvas::add(Drawable* drawable)
 		if (boundedDrawable)
 		{
 			drawableTree.insert(boundedDrawable);
+			boundedDrawables.push_back(boundedDrawable);
 			this->minBoundedX = min(this->minBoundedX, boundedDrawable->minX);
 			this->minBoundedY = min(this->minBoundedY, boundedDrawable->minY);
 			this->maxBoundedX = max(this->maxBoundedX, boundedDrawable->maxX);
@@ -684,44 +682,21 @@ void Canvas::setLabel(double x, double y, std::string label)
 Drawable* Canvas::getClosestPixel(int x, int y)
 {
 	//TODO: Move to Tree
-	//TODO: Check if there are >0 in tree
-	//TODO: Fix possible infinite loop when >10 points are equidistant
-//	std::list<Drawable*> closests;
-//	int               minRadius = 0;
-//	int               maxRadius = 100;
-//	while (maxRadius > 4)
-//	{
-//		int radius = (maxRadius + minRadius) / 2;
-//		closests = drawableTree
-//			.getDrawables(pixelXToUnitX(x - radius), pixelYToUnitY(y - radius),
-//				pixelXToUnitX(x + radius), pixelYToUnitY(y + radius));
-//		if (closests.size() == 0)
-//		{
-//			minRadius = radius;
-//			maxRadius *= 2;
-//		}
-//		else if (closests.size() > 10)
-//			maxRadius = radius;
-//		else
-//			break;
-//	}
-//	double               range     = numeric_limits<double>::infinity();
-//	Drawable     * closest = nullptr;
-//	for (Drawable* d : closests)
-//	{
-//		BoundedDrawable* bd = (BoundedDrawable*) d;
-//		double dx   = (bd->maxX + bd->minX) / 2;
-//		double dy   = (bd->maxY + bd->minY) / 2;
-//		double dist =
-//				   flabs::hypot(x - unitXToPixelX(dx), y - unitYToPixelY(dy));
-//		if (dist < range)
-//		{
-//			range   = dist;
-//			closest = d;
-//		}
-//	}
-//	return closest;
-
-
+	double range = numeric_limits<double>::infinity();
+	Drawable     * closest = nullptr;
+	for (Drawable* d : boundedDrawables)
+	{
+		BoundedDrawable* bd = (BoundedDrawable*) d;
+		double dx   = (bd->maxX + bd->minX) / 2;
+		double dy   = (bd->maxY + bd->minY) / 2;
+		double dist =
+				   flabs::hypot(x - unitXToPixelX(dx), y - unitYToPixelY(dy));
+		if (dist < range)
+		{
+			range   = dist;
+			closest = d;
+		}
+	}
+	return closest;
 }
 }
