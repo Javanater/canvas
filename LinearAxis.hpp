@@ -22,7 +22,7 @@ public:
 
 	virtual void panTo(int pixel);
 
-	virtual void zoom(int pixel, int clicks);
+	virtual bool zoom(int pixel, int clicks);
 
 	virtual void home();
 

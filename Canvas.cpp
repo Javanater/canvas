@@ -124,36 +124,36 @@ void Canvas::drawGrid()
 {
 	// TODO: Move logic to Axis
 	double xGridScale     = (double) pow(2, floor(log2(xAxis->getScale())));
-	double xMajorDivision = xGridScale * 100;
-	double xMinorDivision = xGridScale * 10;
-	double yGridScale     = (double) pow(2, floor(log2(yAxis->getScale())));
-	double yMajorDivision = yGridScale * 100;
-	double yMinorDivision = yGridScale * 10;
-	double minX, maxX, minY, maxY;
+	double      xMajorDivision = xGridScale * 100;
+	double      xMinorDivision = xGridScale * 10;
+	double      yGridScale     = (double) pow(2, floor(log2(yAxis->getScale())));
+	double      yMajorDivision = yGridScale * 100;
+	double      yMinorDivision = yGridScale * 10;
+	double      minX, maxX, minY, maxY;
 	getBounds(minX, maxX, minY, maxY);
 	double start, end;
-	int    w              = 0;
+	int    w                   = 0;
 
 	setColor(minorDivisionColor);
 	start = ceil(minX / xMinorDivision) * xMinorDivision;
 	end   = floor(maxX / xMinorDivision) * xMinorDivision;
-	for (double i = start; i <= end && w < 1000; i += xMinorDivision, ++w)
+	for (double i = start; i <= end; i += xMinorDivision)
 		lineSegment(i, minY, i, maxY);
 
 	start = ceil(minY / yMinorDivision) * yMinorDivision;
 	end   = floor(maxY / yMinorDivision) * yMinorDivision;
-	for (double i = start; i <= end && w < 1000; i += yMinorDivision, ++w)
+	for (double i = start; i <= end; i += yMinorDivision)
 		lineSegment(minX, i, maxX, i);
 
 	setColor(majorDivisionColor);
 	start = ceil(minX / xMajorDivision) * xMajorDivision;
 	end   = floor(maxX / xMajorDivision) * xMajorDivision;
-	for (double i = start; i <= end && w < 1000; i += xMajorDivision, ++w)
+	for (double i = start; i <= end; i += xMajorDivision)
 		lineSegment(i, minY, i, maxY);
 
 	start = ceil(minY / yMajorDivision) * yMajorDivision;
 	end   = floor(maxY / yMajorDivision) * yMajorDivision;
-	for (double i = start; i <= end && w < 1000; i += yMajorDivision, ++w)
+	for (double i              = start; i <= end; i += yMajorDivision)
 		lineSegment(minX, i, maxX, i);
 
 	if (showGridLabels)
@@ -162,7 +162,7 @@ void Canvas::drawGrid()
 		dc->SetTextForeground(majorDivisionLabelColor);
 		start = ceil(minX / xMajorDivision) * xMajorDivision;
 		end   = floor(maxX / xMajorDivision) * xMajorDivision;
-		for (double i = start; i <= end && w < 1000; i += xMajorDivision, ++w)
+		for (double i = start; i <= end; i += xMajorDivision)
 		{
 			ostringstream stringStream;
 			stringStream.precision(1);
@@ -174,7 +174,7 @@ void Canvas::drawGrid()
 
 		start = ceil(minY / yMajorDivision) * yMajorDivision;
 		end   = floor(maxY / yMajorDivision) * yMajorDivision;
-		for (double i = start; i <= end && w < 1000; i += yMajorDivision, ++w)
+		for (double i = start; i <= end; i += yMajorDivision)
 		{
 			ostringstream stringStream;
 			stringStream.precision(1);
@@ -184,16 +184,6 @@ void Canvas::drawGrid()
 //				dc->GetTextExtent(stringStream.str().c_str()).x + 5), i,
 //				stringStream.str().c_str());
 		}
-	}
-
-	if (w >= 1000)
-	{
-		//TODO: Check for this while zooming
-		xAxis->home();
-		yAxis->home();
-		xAxis->setScale(.01);
-		yAxis->setScale(.01);
-		briefMessage("Zoom exceeded 64 bit precision limits");
 	}
 }
 
@@ -293,10 +283,12 @@ void Canvas::OnMouseWheel(wxMouseEvent& event)
 		SetCursor(wxCursor(wxCURSOR_SIZEWE));
 
 	if (!event.ControlDown())
-		yAxis->zoom(event.m_y, event.GetWheelRotation());
+		if (!yAxis->zoom(event.m_y, event.GetWheelRotation()))
+			briefMessage("Zoom exceeds 64-bit precision");
 
 	if (!event.ShiftDown())
-		xAxis->zoom(event.m_x, event.GetWheelRotation());
+		if (!xAxis->zoom(event.m_x, event.GetWheelRotation()))
+			briefMessage("Zoom exceeds 64-bit precision");
 
 	notifyBoundsChanged();
 	Refresh();

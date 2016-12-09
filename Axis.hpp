@@ -65,7 +65,13 @@ public:
 
 	virtual void panTo(int pixel) = 0;
 
-	virtual void zoom(int pixel, int clicks) = 0;
+	/**
+	 * Adjusts scale acordingly.
+	 * @param pixel: the pixel location of the zoom request
+	 * @param clicks: the amount of the zoom
+	 * @return false if the zoom exceeds precision limits, true otherwise
+	 */
+	virtual bool zoom(int pixel, int clicks) = 0;
 
 	virtual void zoomFit() = 0;
 

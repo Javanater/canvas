@@ -26,12 +26,23 @@ void LinearAxis::panTo(int pixel)
 	panStartUnit = pixelToUnit(pixel);
 }
 
-void LinearAxis::zoom(int pixel, int clicks)
+bool LinearAxis::zoom(int pixel, int clicks)
 {
-	double oldUnit = pixelToUnit(pixel);
+	double originalScale  = scale;
+	double originalCenter = center;
+	double oldUnit        = pixelToUnit(pixel);
 	scale = (double) pow(2, log2(scale) - clicks / 120. / 10);
 	double newUnit = pixelToUnit(pixel);
 	center += oldUnit - newUnit;
+	//TODO: Move to Axis
+	for (int i = 1; i < size; ++i)
+		if (pixelToUnit(i) - pixelToUnit(i - 1) == 0)
+		{
+			scale  = originalScale;
+			center = originalCenter;
+			return false;
+		}
+	return true;
 }
 
 void LinearAxis::home()
