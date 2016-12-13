@@ -52,6 +52,8 @@ public:
 
 	void setScale(double scale);
 
+	void resetMinmax();
+
 	void minmax(const std::initializer_list<double> values)
 	{
 		for (const double& value : values)
@@ -61,12 +63,12 @@ public:
 		}
 	}
 
-	void resetMinmax();
+//	virtual void drawGrid() = 0;
 
 	virtual void panTo(int pixel) = 0;
 
 	/**
-	 * Adjusts scale acordingly.
+	 * Adjusts scale accordingly.
 	 * @param pixel: the pixel location of the zoom request
 	 * @param clicks: the amount of the zoom
 	 * @return false if the zoom exceeds precision limits, true otherwise

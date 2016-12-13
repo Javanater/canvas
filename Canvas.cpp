@@ -25,12 +25,12 @@ using namespace std;
 namespace flabs
 {
 Canvas::Canvas(wxWindow* parent, int id) :
-	wxPanel(parent, id), parent(parent), dc(nullptr),
-	drawColor(0, 0, 0), brushStyle(wxBRUSHSTYLE_SOLID),
-	backgroundColor(220, 220, 220), majorDivisionColor(190, 190, 190),
-	minorDivisionColor(205, 205, 205), majorDivisionLabelColor(120, 120, 120),
-	showGrid(true), zoomFitPending(false), drawnOnce(false),
-	showGridLabels(true), xAxis(new LinearAxis()), yAxis(new LinearAxis(true))
+	wxPanel(parent, id), parent(parent), dc(nullptr), drawColor(0, 0, 0),
+	brushStyle(wxBRUSHSTYLE_SOLID), backgroundColor(220, 220, 220),
+	majorDivisionColor(190, 190, 190), minorDivisionColor(205, 205, 205),
+	majorDivisionLabelColor(120, 120, 120), showGrid(true),
+	zoomFitPending(false), drawnOnce(false), showGridLabels(true),
+	xAxis(new LinearAxis()), yAxis(new LinearAxis(true))
 {
 	minBoundedX = minBoundedY = numeric_limits<double>::infinity();
 	maxBoundedX = maxBoundedY = -numeric_limits<double>::infinity();
@@ -124,21 +124,24 @@ void Canvas::drawGrid()
 {
 	// TODO: Move logic to Axis
 	double xGridScale     = (double) pow(2, floor(log2(xAxis->getScale())));
-	double      xMajorDivision = xGridScale * 100;
-	double      xMinorDivision = xGridScale * 10;
-	double      yGridScale     = (double) pow(2, floor(log2(yAxis->getScale())));
-	double      yMajorDivision = yGridScale * 100;
-	double      yMinorDivision = yGridScale * 10;
-	double      minX, maxX, minY, maxY;
+	double xMajorDivision = xGridScale * 100;
+	double xMinorDivision = xGridScale * 10;
+	double yGridScale     = (double) pow(2, floor(log2(yAxis->getScale())));
+	double yMajorDivision = yGridScale * 100;
+	double yMinorDivision = yGridScale * 10;
+	double minX, maxX, minY, maxY;
 	getBounds(minX, maxX, minY, maxY);
 	double start, end;
-	int    w                   = 0;
+	int    w              = 0;
 
 	setColor(minorDivisionColor);
 	start = ceil(minX / xMinorDivision) * xMinorDivision;
 	end   = floor(maxX / xMinorDivision) * xMinorDivision;
 	for (double i = start; i <= end; i += xMinorDivision)
-		lineSegment(i, minY, i, maxY);
+	{
+		int ii = unitXToPixelX(i);
+		dc->DrawLine(ii, 0, ii, GetSize().y);
+	}
 
 	start = ceil(minY / yMinorDivision) * yMinorDivision;
 	end   = floor(maxY / yMinorDivision) * yMinorDivision;
@@ -153,7 +156,7 @@ void Canvas::drawGrid()
 
 	start = ceil(minY / yMajorDivision) * yMajorDivision;
 	end   = floor(maxY / yMajorDivision) * yMajorDivision;
-	for (double i              = start; i <= end; i += yMajorDivision)
+	for (double i = start; i <= end; i += yMajorDivision)
 		lineSegment(minX, i, maxX, i);
 
 	if (showGridLabels)
