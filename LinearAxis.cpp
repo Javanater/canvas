@@ -50,7 +50,9 @@ void LinearAxis::home()
 	center = 0;
 }
 
-LinearAxis::LinearAxis(bool invert) : Axis(invert)
+LinearAxis::LinearAxis(bool invert) :
+	Axis(invert), gridScale(0), majorDivision(0), minorDivision(0), start(0),
+	end(0), minBound(0), maxBound(0)
 {
 }
 
@@ -61,5 +63,45 @@ void LinearAxis::zoomFit()
 
 	center = (maximum + minimum) / 2;
 	scale  = (maximum - minimum) / size * 1.2;
+}
+
+int LinearAxis::firstMinorTickMark()
+{
+	gridScale     = (double) pow(2, floor(log2(scale)));
+	minorDivision = gridScale * 10;
+	getBounds(minBound, maxBound);
+	start = ceil(minBound / minorDivision) * minorDivision;
+	end   = floor(maxBound / minorDivision) * minorDivision;
+	return unitToPixel(start);
+}
+
+int LinearAxis::nextMinorTickMark()
+{
+	return unitToPixel(start += minorDivision);
+}
+
+int LinearAxis::lastMinorTickMark()
+{
+	return unitToPixel(end);
+}
+
+int LinearAxis::firstMajorTickMark()
+{
+	gridScale     = (double) pow(2, floor(log2(scale)));
+	majorDivision = gridScale * 100;
+	getBounds(minBound, maxBound);
+	start = ceil(minBound / majorDivision) * majorDivision;
+	end   = floor(maxBound / majorDivision) * majorDivision;
+	return unitToPixel(start);
+}
+
+int LinearAxis::nextMajorTickMark()
+{
+	return unitToPixel(start += majorDivision);
+}
+
+int LinearAxis::lastMajorTickMark()
+{
+	return unitToPixel(end);
 }
 }

@@ -122,71 +122,52 @@ void Canvas::paint(wxDC* dc)
 
 void Canvas::drawGrid()
 {
-	// TODO: Move logic to Axis
-	double xGridScale     = (double) pow(2, floor(log2(xAxis->getScale())));
-	double xMajorDivision = xGridScale * 100;
-	double xMinorDivision = xGridScale * 10;
-	double yGridScale     = (double) pow(2, floor(log2(yAxis->getScale())));
-	double yMajorDivision = yGridScale * 100;
-	double yMinorDivision = yGridScale * 10;
-	double minX, maxX, minY, maxY;
-	getBounds(minX, maxX, minY, maxY);
-	double start, end;
-	int    w              = 0;
-
 	setColor(minorDivisionColor);
-	start = ceil(minX / xMinorDivision) * xMinorDivision;
-	end   = floor(maxX / xMinorDivision) * xMinorDivision;
-	for (double i = start; i <= end; i += xMinorDivision)
-	{
-		int ii = unitXToPixelX(i);
-		dc->DrawLine(ii, 0, ii, GetSize().y);
-	}
+	for (int i = xAxis->firstMinorTickMark(); i <= xAxis->lastMinorTickMark();
+		i = xAxis->nextMinorTickMark())
+		dc->DrawLine(i, 0, i, GetSize().y);
 
-	start = ceil(minY / yMinorDivision) * yMinorDivision;
-	end   = floor(maxY / yMinorDivision) * yMinorDivision;
-	for (double i = start; i <= end; i += yMinorDivision)
-		lineSegment(minX, i, maxX, i);
+	for (int i = yAxis->firstMinorTickMark(); i >= yAxis->lastMinorTickMark();
+		i = yAxis->nextMinorTickMark())
+		dc->DrawLine(0, i, GetSize().x, i);
 
 	setColor(majorDivisionColor);
-	start = ceil(minX / xMajorDivision) * xMajorDivision;
-	end   = floor(maxX / xMajorDivision) * xMajorDivision;
-	for (double i = start; i <= end; i += xMajorDivision)
-		lineSegment(i, minY, i, maxY);
+	for (int i = xAxis->firstMajorTickMark(); i <= xAxis->lastMajorTickMark();
+		i = xAxis->nextMajorTickMark())
+		dc->DrawLine(i, 0, i, GetSize().y);
 
-	start = ceil(minY / yMajorDivision) * yMajorDivision;
-	end   = floor(maxY / yMajorDivision) * yMajorDivision;
-	for (double i = start; i <= end; i += yMajorDivision)
-		lineSegment(minX, i, maxX, i);
+	for (int i = yAxis->firstMajorTickMark(); i >= yAxis->lastMajorTickMark();
+		i = yAxis->nextMajorTickMark())
+		dc->DrawLine(0, i, GetSize().x, i);
 
 	if (showGridLabels)
 	{
-		int lineHeight = dc->GetFontMetrics().height;
-		dc->SetTextForeground(majorDivisionLabelColor);
-		start = ceil(minX / xMajorDivision) * xMajorDivision;
-		end   = floor(maxX / xMajorDivision) * xMajorDivision;
-		for (double i = start; i <= end; i += xMajorDivision)
-		{
-			ostringstream stringStream;
-			stringStream.precision(1);
-			stringStream << scientific << i;
+//		int lineHeight = dc->GetFontMetrics().height;
+//		dc->SetTextForeground(majorDivisionLabelColor);
+//		start = ceil(minX / xMajorDivision) * xMajorDivision;
+//		end   = floor(maxX / xMajorDivision) * xMajorDivision;
+//		for (double i = start; i <= end; i += xMajorDivision)
+//		{
+//			ostringstream stringStream;
+//			stringStream.precision(1);
+//			stringStream << scientific << i;
 //			string(i, minY + yPixelsToUnits(lineHeight),
 //				stringStream.str().c_str());
-			string(i, maxY, stringStream.str().c_str());
-		}
+//			string(i, maxY, stringStream.str().c_str());
+//		}
 
-		start = ceil(minY / yMajorDivision) * yMajorDivision;
-		end   = floor(maxY / yMajorDivision) * yMajorDivision;
-		for (double i = start; i <= end; i += yMajorDivision)
-		{
-			ostringstream stringStream;
-			stringStream.precision(1);
-			stringStream << scientific << i;
-			string(minX, i, stringStream.str().c_str());
+//		start = ceil(minY / yMajorDivision) * yMajorDivision;
+//		end   = floor(maxY / yMajorDivision) * yMajorDivision;
+//		for (double i = start; i <= end; i += yMajorDivision)
+//		{
+//			ostringstream stringStream;
+//			stringStream.precision(1);
+//			stringStream << scientific << i;
+//			string(minX, i, stringStream.str().c_str());
 //			string(maxX - xPixelsToUnits(
 //				dc->GetTextExtent(stringStream.str().c_str()).x + 5), i,
 //				stringStream.str().c_str());
-		}
+//		}
 	}
 }
 

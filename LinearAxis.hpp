@@ -27,6 +27,26 @@ public:
 	virtual void home();
 
 	virtual void zoomFit();
+
+	virtual int firstMinorTickMark();
+
+	virtual int nextMinorTickMark();
+
+	virtual int lastMinorTickMark();
+
+	virtual int firstMajorTickMark();
+
+	virtual int nextMajorTickMark();
+
+	virtual int lastMajorTickMark();
+
+	double gridScale;
+	double majorDivision;
+	double minorDivision;
+	double start;
+	double end;
+	double minBound;
+	double maxBound;
 };
 }
 

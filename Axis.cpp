@@ -84,4 +84,18 @@ void Axis::setScale(double scale)
 {
 	Axis::scale = scale;
 }
+
+void Axis::getBounds(double& min, double& max)
+{
+	if (invert)
+	{
+		min = pixelToUnit(size);
+		max = pixelToUnit(0);
+	}
+	else
+	{
+		min = pixelToUnit(0);
+		max = pixelToUnit(size);
+	}
+}
 }

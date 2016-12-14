@@ -54,6 +54,8 @@ public:
 
 	void resetMinmax();
 
+	void getBounds(double& min, double& max);
+
 	void minmax(const std::initializer_list<double> values)
 	{
 		for (const double& value : values)
@@ -63,7 +65,17 @@ public:
 		}
 	}
 
-//	virtual void drawGrid() = 0;
+	virtual int firstMinorTickMark() = 0;
+
+	virtual int nextMinorTickMark() = 0;
+
+	virtual int lastMinorTickMark() = 0;
+
+	virtual int firstMajorTickMark() = 0;
+
+	virtual int nextMajorTickMark() = 0;
+
+	virtual int lastMajorTickMark() = 0;
 
 	virtual void panTo(int pixel) = 0;
 
