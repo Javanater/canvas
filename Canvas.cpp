@@ -197,8 +197,8 @@ void Canvas::OnMouseLeftButton(wxMouseEvent& event)
 	if (event.m_leftDown)
 	{
 		MouseEvent mouseEvent;
-		mouseEvent.pixelX = event.m_x;
 		mouseEvent.pixelY = event.m_y;
+		mouseEvent.pixelX = event.m_x;
 		mouseEvent.x      = pixelXToUnitX(event.m_x);
 		mouseEvent.y      = pixelYToUnitY(event.m_y);
 		mouseEvent.type   = DOWN;
