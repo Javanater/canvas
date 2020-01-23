@@ -14,15 +14,18 @@
 #include "BoundedDrawable.hpp"
 #include "DrawableTree.hpp"
 #include "Axis.hpp"
-#include <Utilities/utilities.hpp>
-#include <Utilities/Notifier.hpp>
-#include <Utilities/Watchdog.hpp>
+#include <utilities/utilities.hpp>
+#include <utilities/Notifier.hpp>
+#include <utilities/Watchdog.hpp>
 #include <wx/dcbuffer.h>
 #include <iterator>
 #include <iostream>
 
 namespace flabs
 {
+
+using UCHAR = unsigned char;
+
 class Canvas : public wxPanel
 {
 public:

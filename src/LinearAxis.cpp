@@ -2,7 +2,7 @@
 // Created by Madison on 12/7/2016.
 //
 
-#include "LinearAxis.hpp"
+#include <canvas/LinearAxis.hpp>
 
 using namespace std;
 

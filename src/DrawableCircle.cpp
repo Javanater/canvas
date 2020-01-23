@@ -2,7 +2,7 @@
 // Created by Madison on 11/10/2016.
 //
 
-#include "DrawableCircle.hpp"
+#include <canvas/DrawableCircle.hpp>
 
 flabs::DrawableCircle::DrawableCircle(double x, double y, double radius,
 	wxColour color, int level) :

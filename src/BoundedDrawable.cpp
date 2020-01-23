@@ -2,7 +2,7 @@
 // Created by Madison on 11/29/2016.
 //
 
-#include "BoundedDrawable.hpp"
+#include <canvas/BoundedDrawable.hpp>
 
 namespace flabs
 {

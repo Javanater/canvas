@@ -5,7 +5,7 @@
  *      Author: Madison
  */
 
-#include "CanvasFrame.hpp"
+#include <canvas/CanvasFrame.hpp>
 
 namespace flabs
 {

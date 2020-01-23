@@ -2,7 +2,7 @@
 // Created by Madison on 12/5/2016.
 //
 
-#include "DrawableText.hpp"
+#include <canvas/DrawableText.hpp>
 
 using namespace std;
 

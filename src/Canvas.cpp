@@ -5,13 +5,13 @@
  *      Author: Madison
  */
 
-#include "Canvas.hpp"
+#include <canvas/Canvas.hpp>
 #include <list>
 #include <math.h>
 #include <iostream>
 #include <sstream>
-#include <Math/Math.hpp>
-#include "LinearAxis.hpp"
+#include <math/Math.hpp>
+#include <canvas/LinearAxis.hpp>
 
 using namespace std;
 

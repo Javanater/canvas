@@ -2,7 +2,7 @@
 // Created by Madison on 11/28/2016.
 //
 
-#include "DrawableTree.hpp"
+#include <canvas/DrawableTree.hpp>
 
 namespace flabs
 {

@@ -5,7 +5,7 @@
 #ifndef PROJECTS_AXIS_HPP
 #define PROJECTS_AXIS_HPP
 
-#include <Utilities/utilities.hpp>
+#include <utilities/utilities.hpp>
 
 namespace flabs
 {

@@ -5,7 +5,7 @@
  *      Author: Madison
  */
 
-#include "Drawable.hpp"
+#include <canvas/Drawable.hpp>
 
 namespace flabs
 {
