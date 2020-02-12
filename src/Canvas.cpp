@@ -350,8 +350,8 @@ Canvas::rectanglePixel(double x, double y, int ndx, int pdx, int ndy, int pdy)
 void Canvas::circle(double x, double y, double radius)
 {
 	updateMinMax(x - radius, y - radius, x + radius, y + radius);
-	dc->DrawEllipticArc(unitXToPixelX(x - radius), unitYToPixelY(y + radius),
-		xAxis->pixelLength(x - radius, radius * 2),
+	dc->DrawEllipticArc(unitXToPixelX(x + radius), unitYToPixelY(y + radius),
+		xAxis->pixelLength(x + radius, radius * 2),
 		yAxis->pixelLength(y - radius, radius * 2), 0, 360);
 }
 
